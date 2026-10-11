@@ -1,0 +1,46 @@
+// storage.js — tout ce qui touche à localStorage.
+// localStorage garde des textes dans le navigateur, même après la fermeture de la page.
+// On y range tout notre état sous forme de JSON (un objet transformé en texte).
+
+const STORAGE_KEY = "cahierJS.v1";
+
+// L'état de départ : ce que le site sait de toi quand tu arrives pour la première fois.
+function defaultState() {
+  return {
+    version: 1,
+    theme: "light",
+    lastLesson: null,   // dernier cours ouvert, ex. "variables"
+    lessonsDone: {},    // cours terminés, ex. { variables: true }
+    exercises: {},      // un dossier par exercice : { "var-1": { attempts, fails, success, review, correctionSeen, points } }
+    notions: {},        // compteurs par notion : { "let et const": { ok: 3, ko: 1 } }
+    projectsDone: {},   // projets terminés (utilisé dans les prochaines versions)
+  };
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultState();
+    // On fusionne avec l'état par défaut : si on ajoute un champ plus tard, il existera quand même.
+    return Object.assign(defaultState(), JSON.parse(raw));
+  } catch (error) {
+    console.warn("Impossible de lire la sauvegarde :", error);
+    return defaultState();
+  }
+}
+
+function saveState(state) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.warn("Impossible d’enregistrer la progression :", error);
+  }
+}
+
+function clearSavedState() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (error) {
+    console.warn("Impossible d’effacer la sauvegarde :", error);
+  }
+}
