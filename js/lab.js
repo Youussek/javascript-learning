@@ -423,6 +423,7 @@ function renderLab(options) {
 
   return {
     node: node, getFiles: getFiles, starter: starter, run: run, reset: reset,
+    setCode(name, code) { if (editors[name]) editors[name].value = code; },
     lock() { starter.forEach((f) => { editors[f.name].readOnly = true; }); },
   };
 }

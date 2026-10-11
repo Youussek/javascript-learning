@@ -172,6 +172,54 @@ function nextLesson() {
   return LESSONS.find((lesson) => !state.lessonsDone[lesson.id]) || null;
 }
 
+// ─── Projets ───
+function emptyProjectState() {
+  return { steps: {}, fails: 0, done: false, correctionSeen: false, draft: null };
+}
+
+function getProjectState(projectId) {
+  return (state.projects && state.projects[projectId]) || emptyProjectState();
+}
+
+function ensureProjectState(projectId) {
+  if (!state.projects) state.projects = {};
+  if (!state.projects[projectId]) state.projects[projectId] = emptyProjectState();
+  return state.projects[projectId];
+}
+
+// Enregistre le résultat de la vérification d'une étape. Renvoie true si le projet est terminé.
+function recordProjectCheck(project, stepIndex, ok) {
+  const record = ensureProjectState(project.id);
+  if (ok) record.steps[stepIndex] = true;
+  else record.fails++;
+  record.done = project.steps.every((step, index) => record.steps[index] === true);
+  commit();
+  return record.done;
+}
+
+function recordProjectCorrection(projectId) {
+  ensureProjectState(projectId).correctionSeen = true;
+  commit();
+}
+
+// Le brouillon (le code de l'élève) est sauvegardé sans prévenir le reste du site.
+function saveProjectDraft(projectId, files) {
+  const record = ensureProjectState(projectId);
+  record.draft = {};
+  files.forEach((file) => { record.draft[file.name] = file.code; });
+  saveState(state);
+}
+
+function resetProject(projectId) {
+  if (state.projects) delete state.projects[projectId];
+  commit();
+}
+
+function projectStepsDone(project) {
+  const record = getProjectState(project.id);
+  return project.steps.filter((step, index) => record.steps[index] === true).length;
+}
+
 // ─── Préférences et remise à zéro ───
 function setTheme(theme) {
   state.theme = theme;

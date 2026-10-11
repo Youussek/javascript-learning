@@ -62,7 +62,7 @@ function renderNav() {
     { href: "/cours", text: "Cours", prefix: "/cours" },
     { href: "/exercices", text: "Exercices", prefix: "/exercice" },
     { href: "/revision", text: "Révision", prefix: "/revision" },
-    { href: "/projets", text: "Projets", prefix: "/projets" },
+    { href: "/projets", text: "Projets", prefix: "/projet" },
     { href: "/progression", text: "Progression", prefix: "/progression" },
   ];
 
@@ -410,15 +410,177 @@ function renderQuickReview() {
 
 // ═══════════ Projets ═══════════
 function renderProjects() {
+  const finished = PROJECTS.filter((p) => getProjectState(p.id).done).length;
+  const open = PROJECTS.filter((p) => p.available).length;
   return h("div", { class: "page" },
-    pageTitle("Projets", "Sept projets de plus en plus difficiles. Ils utilisent le DOM et les événements : ils s’ouvriront dans la prochaine version, une fois les niveaux 2 à 4 disponibles."),
-    h("ol", { class: "rows lessons" }, PROJECTS.map((project, index) => h("li", { class: "row locked" },
-      h("span", { class: "num", "aria-hidden": "true" }, index + 1),
-      h("div", { class: "row-main" },
-        h("p", { class: "row-title" }, project.title),
-        h("p", { class: "muted small" }, project.goal + " Prérequis : " + project.needs + ".")),
-      h("span", { class: "badge d" + project.difficulty }, DIFFICULTY_LABELS[project.difficulty]),
-      h("span", { class: "badge soon" }, "Bientôt")))));
+    pageTitle("Projets", "Des projets de plus en plus difficiles, à construire étape par étape. Chaque étape se vérifie automatiquement, avec des indices progressifs ; la correction finale n’apparaît qu’une fois le projet terminé."),
+    para(finished + " projet" + (finished > 1 ? "s" : "") + " terminé" + (finished > 1 ? "s" : "") + " sur " + open + " disponibles.", "muted"),
+    h("ol", { class: "rows lessons" }, PROJECTS.map((project, index) => {
+      const record = getProjectState(project.id);
+      const done = project.available ? projectStepsDone(project) : 0;
+      return h("li", { class: "row" + (project.available ? "" : " locked") },
+        h("span", { class: "num", "aria-hidden": "true" }, index + 1),
+        h("div", { class: "row-main" },
+          project.available ? link("/projet/" + project.id, project.title, "row-title") : h("p", { class: "row-title" }, project.title),
+          h("p", { class: "muted small" }, project.goal + (project.available ? "" : " Disponible avec : " + project.needs + "."))),
+        h("span", { class: "badge d" + project.difficulty }, DIFFICULTY_LABELS[project.difficulty]),
+        project.available
+          ? (record.done ? h("span", { class: "status ok" }, "✓ Terminé") : h("span", { class: "status todo" }, done + " / " + project.steps.length + " étapes"))
+          : h("span", { class: "badge soon" }, "Bientôt"));
+    })));
+}
+
+function renderProject(id) {
+  const project = getProject(id);
+  if (!project || !project.available) return renderNotFound();
+  const lab = renderLab({ files: project.files, previewHeight: project.previewHeight, tips: true });
+  const saved = getProjectState(id).draft;
+  if (saved) Object.keys(saved).forEach((name) => lab.setCode(name, saved[name]));
+
+  // Le code est sauvegardé pendant que tu écris (brouillon).
+  let saveTimer = null;
+  lab.node.addEventListener("input", () => {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => saveProjectDraft(id, lab.getFiles()), 400);
+  });
+
+  const progressText = h("p", { class: "muted" });
+  const progressBar = h("div", {});
+  const completion = h("div", {});
+  const correctionBox = h("div", {});
+  const correctionNote = h("p", { class: "muted small" });
+  const correctionBtn = h("button", { class: "btn", type: "button", onclick: showCorrection }, "Voir la correction finale");
+  const stepStatuses = [];
+
+  function correctionUnlocked() {
+    const record = getProjectState(id);
+    return record.done || record.fails >= 3;
+  }
+
+  function refresh() {
+    const done = projectStepsDone(project);
+    progressText.textContent = done + " étape" + (done > 1 ? "s" : "") + " validée" + (done > 1 ? "s" : "") + " sur " + project.steps.length + ".";
+    progressBar.replaceChildren(bar(Math.round((done / project.steps.length) * 100)));
+    const record = getProjectState(id);
+    project.steps.forEach((step, index) => {
+      const ok = record.steps[index] === true;
+      stepStatuses[index].className = "status " + (ok ? "ok" : "todo");
+      stepStatuses[index].textContent = ok ? "✓ Validée" : "À faire";
+    });
+    const unlocked = correctionUnlocked();
+    correctionBtn.disabled = !unlocked;
+    correctionNote.textContent = unlocked
+      ? ""
+      : "La correction se débloque quand toutes les étapes sont validées, ou après 3 vérifications ratées.";
+    completion.replaceChildren();
+    if (record.done) {
+      const index = PROJECTS.indexOf(project);
+      const next = PROJECTS.slice(index + 1).find((p) => p.available);
+      completion.append(h("div", { class: "feedback ok" },
+        h("strong", {}, "Projet terminé, bravo !"),
+        para("Toutes les étapes sont validées. Tu peux maintenant ouvrir la correction pour comparer avec ta solution."),
+        next ? link("/projet/" + next.id, "Projet suivant : " + next.title, "btn small") : null));
+    }
+  }
+
+  function showCorrection() {
+    if (!correctionUnlocked()) return;
+    recordProjectCorrection(id);
+    correctionBox.replaceChildren(h("div", { class: "correction" },
+      h("h4", {}, "Correction finale"),
+      para("Ce n’est qu’une solution possible : si ton code fait la même chose, il est bon."),
+      project.solution.map((file) => h("div", {}, h("p", { class: "muted small" }, file.name), codeBlock(file.code, true))),
+      h("h4", {}, "La solution expliquée"),
+      project.explanation.map((text) => para(text))));
+  }
+
+  const stepCards = project.steps.map((step, index) => {
+    let shownHints = 0;
+    let failsHere = 0;
+    const feedback = h("div", { class: "feedback", "aria-live": "polite" });
+    const hintsBox = h("div", { class: "hints" });
+    const status = h("span", { class: "status todo" }, "À faire");
+    stepStatuses.push(status);
+    const checkBtn = h("button", { class: "btn primary", type: "button", onclick: check }, "Vérifier cette étape");
+    const hintBtn = h("button", { class: "btn", type: "button", onclick: revealHint }, "Indice 1");
+
+    function revealHint() {
+      if (shownHints >= step.hints.length) return;
+      hintsBox.append(h("div", { class: "hint" },
+        h("strong", {}, "Indice " + (shownHints + 1) + " : " + HINT_TITLES[shownHints]),
+        para(step.hints[shownHints])));
+      shownHints++;
+      hintBtn.textContent = shownHints < step.hints.length ? "Indice " + (shownHints + 1) : "Plus d’indice";
+      hintBtn.disabled = shownHints >= step.hints.length;
+    }
+
+    async function check() {
+      checkBtn.disabled = true;
+      feedback.className = "feedback info";
+      feedback.replaceChildren(h("p", {}, "Vérification…"));
+      const files = lab.getFiles();
+      saveProjectDraft(id, files);
+      const result = await lab.run(step.tests || [], step.actions || []);
+      let problems;
+      if (result.timeout) problems = [result.error];
+      else if (result.error) problems = ["La page produit une erreur : " + result.error + ". " + explainError(result.error)];
+      else problems = checkLab(step, files, result);
+      checkBtn.disabled = false;
+
+      const ok = problems.length === 0;
+      recordProjectCheck(project, index, ok);
+      if (ok) {
+        feedback.className = "feedback ok";
+        feedback.replaceChildren(h("strong", {}, "Étape validée !"));
+      } else {
+        failsHere++;
+        feedback.className = "feedback ko";
+        feedback.replaceChildren(h("strong", {}, "Pas encore."), h("ul", {}, problems.map((line) => h("li", { html: rich(line) }))));
+        // Aide progressive : 1er échec → indice 1, 2e échec → indice 2.
+        if (failsHere === 1 && shownHints < 1) revealHint();
+        if (failsHere === 2 && shownHints < 2) revealHint();
+      }
+      refresh();
+    }
+
+    return h("li", { class: "step-card" },
+      h("div", { class: "step-head" }, h("h3", {}, step.title), status),
+      renderBlocks(step.instruction),
+      h("div", { class: "toolbar" }, checkBtn, hintBtn),
+      feedback, hintsBox);
+  });
+
+  const page = h("div", { class: "page project-page" },
+    h("p", { class: "crumbs" }, link("/projets", "Projets"), " / " + project.title),
+    h("header", { class: "page-head" },
+      h("h1", {}, project.title),
+      h("div", { class: "ex-meta" },
+        h("span", { class: "badge d" + project.difficulty }, DIFFICULTY_LABELS[project.difficulty]),
+        h("span", { class: "muted small" }, project.steps.length + " étapes"))),
+    para(project.goal, "lead"),
+    para("Tu vas utiliser : " + project.skills + ".", "muted"),
+    progressText, progressBar, completion,
+    lab.node,
+    h("section", { class: "block first" },
+      h("h2", {}, "Les étapes"),
+      para("Écris ton code dans l’éditeur ci-dessus, puis clique sur « Vérifier cette étape ». La page de l’aperçu est testée automatiquement : clics, saisies et touches sont simulés."),
+      h("ol", { class: "project-steps" }, stepCards)),
+    h("section", { class: "block" },
+      h("h2", {}, "Correction"),
+      correctionNote,
+      h("div", { class: "toolbar" }, correctionBtn),
+      correctionBox),
+    h("section", { class: "block danger-zone" },
+      h("button", { class: "btn danger", type: "button", onclick: () => {
+        if (confirm("Recommencer ce projet ? Ton code et tes étapes validées seront effacés.")) {
+          resetProject(id);
+          router();
+        }
+      } }, "Recommencer le projet")));
+
+  refresh();
+  if (getProjectState(id).correctionSeen && correctionUnlocked()) showCorrection();
+  return page;
 }
 
 // ═══════════ Progression ═══════════
@@ -458,6 +620,15 @@ function renderProgressPage() {
         h("div", { class: "row-main" }, link("/cours/" + row.lessonId, row.name, "row-title")),
         h("span", { class: "status " + (row.status === "mastered" ? "ok" : row.status === "review" ? "review" : "todo") }, statusText[row.status]))))),
 
+    h("section", { class: "block" },
+      h("h2", {}, "Les projets"),
+      h("ul", { class: "rows compact" }, PROJECTS.filter((p) => p.available).map((project) => {
+        const record = getProjectState(project.id);
+        return h("li", { class: "row" },
+          h("div", { class: "row-main" }, link("/projet/" + project.id, project.title, "row-title")),
+          h("span", { class: "status " + (record.done ? "ok" : "todo") }, record.done ? "✓ Terminé" : projectStepsDone(project) + " / " + project.steps.length + " étapes"));
+      }))),
+
     h("section", { class: "block danger-zone" },
       h("h2", {}, "Remettre à zéro"),
       para("Efface toute ta progression (cours terminés, exercices, scores, erreurs). Cette action est définitive.", "muted"),
@@ -483,6 +654,7 @@ const routes = [
   { re: /^\/revision$/, view: renderRevision },
   { re: /^\/revision\/rapide$/, view: renderQuickReview },
   { re: /^\/projets$/, view: renderProjects },
+  { re: /^\/projet\/([\w-]+)$/, view: renderProject },
   { re: /^\/progression$/, view: renderProgressPage },
 ];
 

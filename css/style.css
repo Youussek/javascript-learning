@@ -384,6 +384,22 @@ a.row-title:hover { color: var(--blue); text-decoration: underline; }
 .result h2 { margin-bottom: 12px; }
 .result .bar { margin-bottom: 14px; }
 
+/* ─── Projets ─── */
+.project-steps { list-style: none; padding: 0; margin: 0; max-width: none; counter-reset: etape; }
+.step-card {
+  counter-increment: etape; position: relative; background: var(--panel); border: 1.5px solid var(--line);
+  border-radius: var(--radius); padding: 16px 20px 12px 56px; margin: 0 0 12px;
+}
+.step-card::before {
+  content: counter(etape); position: absolute; left: 16px; top: 16px; width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--red); color: #fff; font-weight: 700; font-size: 0.9rem;
+}
+[data-theme="dark"] .step-card::before { color: #1a0a12; }
+.step-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.step-card p { margin-bottom: 0.6em; }
+.step-card ul { margin-bottom: 0.6em; }
+.project-page .bar { margin: 6px 0 14px; max-width: 420px; }
+
 /* ─── Tableau de progression ─── */
 .scroll { overflow-x: auto; background: var(--panel); border: 1.5px solid var(--line); border-radius: var(--radius); }
 table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 0.95rem; }

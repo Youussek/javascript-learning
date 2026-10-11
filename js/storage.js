@@ -13,7 +13,7 @@ function defaultState() {
     lessonsDone: {},    // cours terminés, ex. { variables: true }
     exercises: {},      // un dossier par exercice : { "var-1": { attempts, fails, success, review, correctionSeen, points } }
     notions: {},        // compteurs par notion : { "let et const": { ok: 3, ko: 1 } }
-    projectsDone: {},   // projets terminés (utilisé dans les prochaines versions)
+    projects: {},       // un dossier par projet : { steps: {0: true}, fails: 2, done: false, correctionSeen: false, draft: {...} }
   };
 }
 
