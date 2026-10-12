@@ -20,6 +20,99 @@
 //
 // label (optionnel) remplace le nom du type, par exemple « Trouver l’erreur ».
 
+// ─── Morceaux de pages réutilisés dans les exercices du niveau 5 ───
+const ACCORDEON_BODY = `<div id="accordeon">
+  <button class="titre" aria-expanded="false">Livraison</button>
+  <div class="contenu" hidden>Colis expédié sous 48 h.</div>
+  <button class="titre" aria-expanded="false">Retours</button>
+  <div class="contenu" hidden>Retours gratuits pendant 30 jours.</div>
+  <button class="titre" aria-expanded="false">Paiement</button>
+  <div class="contenu" hidden>Carte bancaire ou virement.</div>
+</div>`;
+const ACCORDEON_CSS = `.titre { display: block; width: 100%; text-align: left; padding: 10px; margin-top: 6px; cursor: pointer; font-weight: bold; }
+.titre[aria-expanded="true"] { background: gold; }
+.contenu { padding: 8px 12px; background: #f4f4ff; }`;
+
+const BURGER_BODY = `<header>
+  <strong>Mon site</strong>
+  <button id="burger" aria-expanded="false">☰ Menu</button>
+</header>
+<nav id="menu">
+  <a href="#">Accueil</a>
+  <a href="#">Contact</a>
+</nav>
+<p id="contenu">Le contenu de la page.</p>`;
+const BURGER_CSS = `header { display: flex; justify-content: space-between; align-items: center; }
+#menu { display: none; background: #eef; padding: 8px; }
+#menu.ouvert { display: block; }
+#menu a { display: block; padding: 6px; }`;
+const BURGER_SCRIPT = `const bouton = document.getElementById("burger");
+const menu = document.getElementById("menu");
+
+function ouvrir() {
+  menu.classList.add("ouvert");
+  bouton.setAttribute("aria-expanded", "true");
+}
+
+function fermer() {
+  menu.classList.remove("ouvert");
+  bouton.setAttribute("aria-expanded", "false");
+}
+
+bouton.addEventListener("click", () => {
+  if (menu.classList.contains("ouvert")) {
+    fermer();
+  } else {
+    ouvrir();
+  }
+});
+`;
+
+const MODALE_BODY = `<button id="ouvrir">Ouvrir la modale</button>
+<div id="fond" hidden>
+  <div class="modale" role="dialog" aria-modal="true">
+    <p>Une fenêtre modale.</p>
+    <button id="fermer">Fermer</button>
+  </div>
+</div>`;
+const MODALE_CSS = `#fond { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; }
+#fond[hidden] { display: none; }
+.modale { background: white; padding: 20px 28px; border-radius: 10px; }`;
+const MODALE_SCRIPT = `const ouvrir = document.getElementById("ouvrir");
+const fond = document.getElementById("fond");
+const fermer = document.getElementById("fermer");
+
+function ouvrirModale() {
+  fond.hidden = false;
+  fermer.focus();
+}
+
+function fermerModale() {
+  fond.hidden = true;
+  ouvrir.focus();
+}
+
+ouvrir.addEventListener("click", ouvrirModale);
+fermer.addEventListener("click", fermerModale);
+`;
+
+const ONGLETS_BODY = `<div role="tablist">
+  <button class="onglet" role="tab" data-cible="p1">Présentation</button>
+  <button class="onglet" role="tab" data-cible="p2">Tarifs</button>
+  <button class="onglet" role="tab" data-cible="p3">Contact</button>
+</div>
+<div class="panneau" id="p1" role="tabpanel" hidden>Nous fabriquons des sites web.</div>
+<div class="panneau" id="p2" role="tabpanel" hidden>À partir de 500 €.</div>
+<div class="panneau" id="p3" role="tabpanel" hidden>contact@exemple.fr</div>`;
+const ONGLETS_CSS = `.onglet { padding: 8px 14px; border: 1px solid #99c; background: #eef; cursor: pointer; }
+.onglet.actif { background: white; font-weight: bold; }
+.panneau { border: 1px solid #99c; padding: 12px; margin-top: -1px; }`;
+
+const TACHES_CSS = `li { display: flex; justify-content: space-between; padding: 6px 8px; margin: 3px 0; background: #eef; cursor: pointer; }
+li.fait { text-decoration: line-through; color: gray; }
+.supprimer { border: 0; background: transparent; color: crimson; cursor: pointer; }
+ul { list-style: none; padding: 0; }`;
+
 const EXERCISES = [
   // ═════════════ Les variables ═════════════
   {
@@ -3007,6 +3100,1108 @@ lien.addEventListener("click", (event) => {
     ],
     explanation: "Le comportement par défaut d’un clic sur un lien est de changer de page. `preventDefault()` l’annule : on peut alors faire autre chose, comme afficher un message.",
     retain: "`preventDefault()` empêche aussi un lien de naviguer.",
+  },
+
+  // ═════════════ NIVEAU 5 — L'état de l'interface ═════════════
+  {
+    id: "eta-1", lesson: "etat", notion: "État de l’interface", type: "qcm", difficulty: 1,
+    question: "Quelle instruction inverse la variable booléenne `actif` (`true` devient `false`, et inversement) ?",
+    options: ["`actif = !actif;`", "`actif = actif;`", "`!actif;`", "`actif = false;`"],
+    answer: 0,
+    why: [
+      "",
+      "Cette instruction réaffecte la même valeur : rien ne change.",
+      "`!actif` calcule l’inverse, mais ne le range nulle part : la variable ne change pas.",
+      "Cette instruction met toujours `false`, quelle que soit la valeur de départ.",
+    ],
+    hints: [
+      "Il faut calculer l’inverse de la valeur actuelle, puis la ranger dans la variable.",
+      "L’opérateur `!` inverse un booléen.",
+      "`actif = !actif;`",
+    ],
+    explanation: "`!actif` donne l’inverse de `actif`. On range ce résultat dans `actif` : la valeur bascule à chaque exécution.",
+    retain: "`variable = !variable` inverse un booléen.",
+  },
+  {
+    id: "eta-2", lesson: "etat", notion: "État de l’interface", type: "predict", difficulty: 2, env: "browser",
+    question: "La personne clique trois fois sur le bouton. Qu’affiche la console ? (une ligne par affichage)",
+    code: `<button id="b">Bascule</button>
+<script>
+  let actif = false;
+  document.getElementById("b").addEventListener("click", () => {
+    actif = !actif;
+    console.log(actif);
+  });
+</script>`,
+    rows: 3,
+    simulate: [{ do: "click", target: "#b", times: 3 }],
+    answers: ["true\nfalse\ntrue"],
+    common: { "false\ntrue\nfalse": "L’état est inversé AVANT l’affichage : au premier clic, il passe de `false` à `true` et on affiche `true`." },
+    hints: [
+      "Suis la valeur de `actif` clic après clic. Au départ : `false`.",
+      "Chaque clic inverse `actif`, puis l’affiche.",
+      "Clic 1 : `true`. Clic 2 : `false`. Clic 3 : `true`.",
+    ],
+    explanation: "Au départ, `actif` vaut `false`. Chaque clic l’inverse puis l’affiche : `true`, `false`, `true`.",
+    retain: "L’état est modifié avant d’être affiché.",
+  },
+  {
+    id: "eta-3", lesson: "etat", notion: "État de l’interface", type: "lab", difficulty: 2,
+    question: "Au clic sur `#bouton`, affiche ou cache le paragraphe `#details` (propriété `hidden`). Le bouton doit afficher « Masquer » quand les détails sont visibles, et « Afficher » quand ils sont cachés.",
+    files: labFiles(`<button id="bouton">Afficher</button>
+<p id="details" hidden>Voici les détails.</p>`, `// Au clic : bascule details.hidden et adapte le texte du bouton
+`, { lockHtml: true }),
+    actions: [{ do: "click", target: "#bouton" }, { do: "click", target: "#bouton" }],
+    tests: [
+      { expr: `document.getElementById("details").hidden`, expect: false, afterAction: 0, label: "Après un clic, les détails doivent être visibles" },
+      { expr: `document.getElementById("bouton").textContent`, expect: "Masquer", afterAction: 0, label: "Après un clic, le bouton doit afficher « Masquer »" },
+      { expr: `document.getElementById("details").hidden`, expect: true, label: "Après deux clics, les détails doivent être cachés" },
+      { expr: `document.getElementById("bouton").textContent`, expect: "Afficher", label: "Après deux clics, le bouton doit afficher « Afficher »" },
+    ],
+    expectLogs: [],
+    mustContain: [],
+    solution: [{ name: "script.js", code: `const bouton = document.getElementById("bouton");
+const details = document.getElementById("details");
+
+bouton.addEventListener("click", () => {
+  details.hidden = !details.hidden;
+  if (details.hidden) {
+    bouton.textContent = "Afficher";
+  } else {
+    bouton.textContent = "Masquer";
+  }
+});` }],
+    hints: [
+      "L’état est déjà dans le DOM : la propriété `details.hidden`.",
+      "`details.hidden = !details.hidden;` inverse l’état. Ensuite, lis-le avec un `if` pour choisir le texte.",
+      "`if (details.hidden) { bouton.textContent = \"Afficher\"; } else { bouton.textContent = \"Masquer\"; }`",
+    ],
+    explanation: "On inverse `hidden`, puis on adapte le texte du bouton d’après le nouvel état.",
+    retain: "Change l’état, puis mets l’affichage à jour d’après cet état.",
+  },
+  {
+    id: "eta-4", lesson: "etat", notion: "État de l’interface", type: "lab", difficulty: 3,
+    question: "Bouton « J’aime » : au clic, le texte passe de « ♡ J’aime » à « ♥ Aimé » (et inversement au clic suivant), et l’attribut `aria-pressed` vaut `\"true\"` ou `\"false\"`. Garde l’état dans une variable `aime` et utilise une fonction `afficher()`.",
+    files: labFiles(`<button id="like" aria-pressed="false">♡ J'aime</button>`, `// État : let aime = false;
+// Affichage : function afficher() { ... }
+`, { lockHtml: true }),
+    actions: [{ do: "click", target: "#like" }, { do: "click", target: "#like" }],
+    tests: [
+      { expr: `document.getElementById("like").getAttribute("aria-pressed")`, expect: "true", afterAction: 0, label: "Après un clic, `aria-pressed` doit valoir \"true\"" },
+      { expr: `document.getElementById("like").textContent`, expect: "♥ Aimé", afterAction: 0, label: "Après un clic, le bouton doit afficher « ♥ Aimé »" },
+      { expr: `document.getElementById("like").getAttribute("aria-pressed")`, expect: "false", label: "Après deux clics, `aria-pressed` doit valoir \"false\"" },
+      { expr: `document.getElementById("like").textContent`, expect: "♡ J'aime", label: "Après deux clics, le bouton doit afficher « ♡ J'aime »" },
+      { expr: `typeof aime`, expect: "boolean", label: "L’état doit être dans une variable booléenne `aime`" },
+    ],
+    expectLogs: [],
+    mustContain: [{ file: "script.js", re: "function\\s+afficher", msg: "Écris une fonction `afficher()`." }],
+    solution: [{ name: "script.js", code: `const bouton = document.getElementById("like");
+let aime = false;
+
+function afficher() {
+  if (aime) {
+    bouton.textContent = "♥ Aimé";
+  } else {
+    bouton.textContent = "♡ J'aime";
+  }
+  bouton.setAttribute("aria-pressed", aime);
+}
+
+bouton.addEventListener("click", () => {
+  aime = !aime;
+  afficher();
+});` }],
+    hints: [
+      "Trois éléments : une variable d’état `aime`, une fonction `afficher()` qui lit cet état, un écouteur qui l’inverse.",
+      "Dans `afficher()` : un `if (aime)` pour le texte, et `bouton.setAttribute(\"aria-pressed\", aime)`.",
+      "L’écouteur fait `aime = !aime;` puis appelle `afficher();`.",
+    ],
+    explanation: "L’état vit dans `aime`. `afficher()` en déduit le texte et l’attribut. Le clic ne fait qu’inverser l’état et redessiner. `setAttribute` convertit le booléen en texte `\"true\"` / `\"false\"`.",
+    retain: "Événement → état → `afficher()`.",
+  },
+  {
+    id: "eta-5", lesson: "etat", notion: "État de l’interface", type: "qcm", label: "Trouver l’erreur", difficulty: 2,
+    question: "Malgré `boite.hidden = true;`, la boîte reste visible. Pourquoi ?",
+    code: `/* style.css */
+.boite { display: block; padding: 20px; }
+
+/* script.js */
+boite.hidden = true;`,
+    options: [
+      "La règle `display: block` l’emporte sur le style de `hidden` : il faut ajouter `.boite[hidden] { display: none; }`.",
+      "`hidden` ne fonctionne pas sur les `div`.",
+      "Il faut écrire `boite.hidden = \"hidden\";`.",
+      "Il faut utiliser `boite.style = \"none\";`.",
+    ],
+    answer: 0,
+    why: [
+      "",
+      "`hidden` fonctionne sur tous les éléments.",
+      "Une valeur de texte n’y changerait rien : `true` convient.",
+      "`style` ne s’affecte pas de cette façon, et `none` n’est pas une propriété.",
+    ],
+    hints: [
+      "`hidden` repose sur une règle CSS du navigateur : `display: none`.",
+      "Une règle du site peut écraser cette règle du navigateur.",
+      "Ajoute `.boite[hidden] { display: none; }` au CSS.",
+    ],
+    explanation: "L’attribut `hidden` s’appuie sur un `display: none` par défaut du navigateur. Une règle plus spécifique du CSS (`.boite { display: block; }`) l’écrase. On rétablit le masquage avec `.boite[hidden] { display: none; }`.",
+    retain: "Un CSS qui définit `display` peut neutraliser `hidden`.",
+  },
+
+  // ═════════════ NIVEAU 5 — Accordéon ═════════════
+  {
+    id: "acc-1", lesson: "accordeon", notion: "Accordéon", type: "qcm", difficulty: 2,
+    question: "Pourquoi utilise-t-on `nextElementSibling` plutôt que `nextSibling` pour retrouver le panneau qui suit un titre ?",
+    options: [
+      "`nextSibling` peut renvoyer un nœud de texte (par exemple le retour à la ligne entre les balises), pas l’élément voulu.",
+      "`nextSibling` n’existe plus en JavaScript.",
+      "`nextElementSibling` est plus rapide.",
+      "`nextSibling` renvoie toujours `null`.",
+    ],
+    answer: 0,
+    why: [
+      "",
+      "`nextSibling` existe toujours : le problème est ce qu’il renvoie.",
+      "La vitesse n’est pas en cause.",
+      "Il renvoie un nœud, souvent un nœud de texte.",
+    ],
+    hints: [
+      "Rappelle-toi la différence entre `children` et `childNodes`.",
+      "Entre deux balises, un retour à la ligne forme un nœud de texte.",
+      "`nextElementSibling` ignore les nœuds de texte.",
+    ],
+    explanation: "Dans le HTML, le retour à la ligne entre le bouton et le `div` est un nœud de texte : `nextSibling` renvoie ce nœud. `nextElementSibling` renvoie le prochain élément.",
+    retain: "Les propriétés `...Element...` ignorent les nœuds de texte.",
+  },
+  {
+    id: "acc-2", lesson: "accordeon", notion: "Accordéon", type: "vf", difficulty: 1,
+    statement: "L’attribut `aria-expanded` indique aux lecteurs d’écran si une section est dépliée ou repliée.",
+    answer: true,
+    why: "Les valeurs sont `\"true\"` (dépliée) et `\"false\"` (repliée). Il doit être mis à jour en même temps que l’affichage.",
+    hints: [
+      "Le nom signifie « étendu » en anglais.",
+      "C’est un attribut d’accessibilité (`aria-...`).",
+      "L’affirmation est vraie.",
+    ],
+    explanation: "`aria-expanded` décrit l’état de la section pour les technologies d’assistance. On le met à jour dans le même gestionnaire que `hidden`.",
+    retain: "`aria-expanded` = `\"true\"` ou `\"false\"`, à synchroniser avec l’affichage.",
+  },
+  {
+    id: "acc-3", lesson: "accordeon", notion: "Accordéon", type: "lab", difficulty: 2,
+    question: "Au clic sur un titre, affiche son panneau (propriété `hidden`) s’il était caché, ou cache-le s’il était visible. Mets aussi `aria-expanded` à jour. Utilise un seul écouteur sur `#accordeon`.",
+    files: labFiles(ACCORDEON_BODY, `// Un seul écouteur sur #accordeon
+`, { lockHtml: true, lockCss: true, cssCode: ACCORDEON_CSS }),
+    actions: [
+      { do: "click", target: "#accordeon .titre:nth-of-type(1)" },
+      { do: "click", target: "#accordeon .titre:nth-of-type(1)" },
+    ],
+    tests: [
+      { expr: `document.querySelector(".contenu").hidden`, expect: false, afterAction: 0, label: "Après un clic, le premier panneau doit être visible" },
+      { expr: `document.querySelector(".titre").getAttribute("aria-expanded")`, expect: "true", afterAction: 0, label: "Après un clic, `aria-expanded` doit valoir \"true\"" },
+      { expr: `document.querySelector(".contenu").hidden`, expect: true, label: "Après un deuxième clic, le panneau doit être caché" },
+      { expr: `document.querySelector(".titre").getAttribute("aria-expanded")`, expect: "false", label: "Après un deuxième clic, `aria-expanded` doit valoir \"false\"" },
+    ],
+    expectLogs: [],
+    mustContain: [{ file: "script.js", re: "closest|matches", msg: "Retrouve le titre cliqué avec `event.target.closest(\".titre\")`." }],
+    solution: [{ name: "script.js", code: `const accordeon = document.getElementById("accordeon");
+
+accordeon.addEventListener("click", (event) => {
+  const titre = event.target.closest(".titre");
+  if (titre === null) {
+    return;
+  }
+  const contenu = titre.nextElementSibling;
+  const etaitOuvert = !contenu.hidden;
+  contenu.hidden = etaitOuvert;
+  titre.setAttribute("aria-expanded", !etaitOuvert);
+});` }],
+    hints: [
+      "Écoute `click` sur `#accordeon`, puis retrouve le titre avec `event.target.closest(\".titre\")`. S’il vaut `null`, quitte avec `return`.",
+      "Le panneau est `titre.nextElementSibling`. Lis son état avant de le changer.",
+      "`const etaitOuvert = !contenu.hidden;` puis `contenu.hidden = etaitOuvert;` et `titre.setAttribute(\"aria-expanded\", !etaitOuvert);`",
+    ],
+    explanation: "On lit l’état avant le clic (`etaitOuvert`), puis on l’inverse pour le panneau (`hidden`) et pour l’attribut `aria-expanded`.",
+    retain: "Délégation + `closest` + `nextElementSibling`.",
+  },
+  {
+    id: "acc-4", lesson: "accordeon", notion: "Accordéon", type: "lab", difficulty: 3,
+    question: "Une seule section ouverte à la fois : quand on ouvre une section, toutes les autres se referment (panneaux cachés et `aria-expanded=\"false\"`).",
+    files: labFiles(ACCORDEON_BODY, `const accordeon = document.getElementById("accordeon");
+
+// Ouvre la section cliquée et referme les autres
+`, { lockHtml: true, lockCss: true, cssCode: ACCORDEON_CSS }),
+    actions: [
+      { do: "click", target: "#accordeon .titre:nth-of-type(1)" },
+      { do: "click", target: "#accordeon .titre:nth-of-type(2)" },
+    ],
+    tests: [
+      { expr: `Array.from(document.querySelectorAll(".contenu")).map((c) => c.hidden)`, expect: [false, true, true], afterAction: 0, label: "Après le 1er clic : seul le panneau 1 est visible" },
+      { expr: `Array.from(document.querySelectorAll(".contenu")).map((c) => c.hidden)`, expect: [true, false, true], label: "Après le 2e clic : seul le panneau 2 est visible" },
+      { expr: `Array.from(document.querySelectorAll(".titre")).map((t) => t.getAttribute("aria-expanded"))`, expect: ["false", "true", "false"], label: "`aria-expanded` doit suivre : false, true, false" },
+    ],
+    expectLogs: [],
+    mustContain: [],
+    solution: [{ name: "script.js", code: `const accordeon = document.getElementById("accordeon");
+
+accordeon.addEventListener("click", (event) => {
+  const titre = event.target.closest(".titre");
+  if (titre === null) {
+    return;
+  }
+  const etaitOuvert = titre.getAttribute("aria-expanded") === "true";
+
+  accordeon.querySelectorAll(".titre").forEach((t) => {
+    t.setAttribute("aria-expanded", "false");
+  });
+  accordeon.querySelectorAll(".contenu").forEach((c) => {
+    c.hidden = true;
+  });
+
+  if (!etaitOuvert) {
+    titre.setAttribute("aria-expanded", "true");
+    titre.nextElementSibling.hidden = false;
+  }
+});` }],
+    hints: [
+      "Avant d’ouvrir la section cliquée, referme toutes les sections avec `querySelectorAll`.",
+      "Mémorise d’abord si la section cliquée était ouverte, sinon tu ne pourras plus le savoir après avoir tout refermé.",
+      "Ferme tout (`forEach`), puis si `!etaitOuvert`, ouvre la section cliquée.",
+    ],
+    explanation: "On referme tout, puis on rouvre seulement la section cliquée (sauf si elle était déjà ouverte : un clic la referme).",
+    retain: "« Une seule ouverte » : tout fermer, puis ouvrir la bonne.",
+  },
+  {
+    id: "acc-5", lesson: "accordeon", notion: "Accordéon", type: "qcm", label: "Trouver l’erreur", difficulty: 2,
+    question: "Cliquer sur le texte du titre ne fait rien, alors que cliquer sur le bord du bouton marche. Pourquoi ?",
+    code: `<button class="titre"><span>Question</span></button>
+
+accordeon.addEventListener("click", (event) => {
+  if (event.target.matches(".titre")) {
+    // ouvre ou ferme la section
+  }
+});`,
+    options: [
+      "Quand on clique sur le texte, `event.target` est le `span`, pas le bouton : `closest(\".titre\")` retrouverait le bouton.",
+      "`matches` n’existe pas pour les boutons.",
+      "Le `span` empêche les clics d’arriver jusqu’au conteneur.",
+      "Il faut écouter `mousedown` au lieu de `click`.",
+    ],
+    answer: 0,
+    why: [
+      "",
+      "`matches` existe pour tous les éléments : c’est ce qu’il teste qui pose problème.",
+      "Les clics remontent normalement vers le conteneur.",
+      "Le type d’événement n’est pas en cause.",
+    ],
+    hints: [
+      "Sur quel élément le clic a-t-il vraiment lieu quand on clique sur le texte ?",
+      "C’est l’élément le plus profond : le `span`.",
+      "`event.target.closest(\".titre\")` remonte du `span` jusqu’au bouton.",
+    ],
+    explanation: "`event.target` est l’élément le plus précis touché : le `span`. `matches(\".titre\")` est faux pour lui. `closest(\".titre\")` remonte dans les parents et retrouve le bouton.",
+    retain: "Délégation avec des éléments imbriqués : `closest`.",
+  },
+
+  // ═════════════ NIVEAU 5 — Menu ═════════════
+  {
+    id: "men-1", lesson: "menu", notion: "Menus", type: "qcm", difficulty: 1,
+    question: "Que renvoie `menu.contains(event.target)` quand on clique sur un lien situé à l’intérieur du menu ?",
+    options: ["`true`", "`false`", "`null`", "Une erreur"],
+    answer: 0,
+    why: [
+      "",
+      "`contains` est vrai pour l’élément lui-même et pour tous ses descendants, liens compris.",
+      "`contains` renvoie toujours un booléen.",
+      "Aucune erreur : la méthode existe sur tous les éléments.",
+    ],
+    hints: [
+      "`contains` répond à la question « cet élément est-il à l’intérieur de moi ? ».",
+      "Le lien est un descendant du menu.",
+      "`true`",
+    ],
+    explanation: "`menu.contains(autre)` vaut `true` si `autre` est le menu ou l’un de ses descendants. Le lien cliqué est dedans : `true`.",
+    retain: "`parent.contains(element)` : l’élément est-il dans le parent ?",
+  },
+  {
+    id: "men-2", lesson: "menu", notion: "Menus", type: "vf", difficulty: 2,
+    statement: "Un écouteur `keydown` posé sur un bouton reçoit la touche Échap même si le bouton n’a pas le focus.",
+    answer: false,
+    why: "Un événement clavier est envoyé à l’élément qui a le focus, puis remonte vers ses parents. Un bouton qui n’a pas le focus ne reçoit rien. Pour une touche valable partout, on écoute `document`.",
+    hints: [
+      "À quel élément le navigateur envoie-t-il les touches ?",
+      "À celui qui a le focus.",
+      "L’affirmation est fausse : il faut écouter `document`.",
+    ],
+    explanation: "Les touches sont envoyées à l’élément qui a le focus. Pour un raccourci global (fermer un menu avec Échap), on écoute `document`.",
+    retain: "Raccourci global = écouteur sur `document`.",
+  },
+  {
+    id: "men-3", lesson: "menu", notion: "Menus", type: "lab", difficulty: 2,
+    question: "Le bouton `#burger` ouvre et ferme le menu `#menu` : il ajoute ou retire la classe `ouvert` sur le menu, et met `aria-expanded` à jour sur le bouton (`\"true\"` / `\"false\"`).",
+    files: labFiles(BURGER_BODY, `// Un clic sur #burger ouvre ou ferme le menu
+`, { lockHtml: true, lockCss: true, cssCode: BURGER_CSS }),
+    actions: [{ do: "click", target: "#burger" }, { do: "click", target: "#burger" }],
+    tests: [
+      { expr: `document.getElementById("menu").classList.contains("ouvert")`, expect: true, afterAction: 0, label: "Après un clic, le menu doit avoir la classe `ouvert`" },
+      { expr: `document.getElementById("burger").getAttribute("aria-expanded")`, expect: "true", afterAction: 0, label: "Après un clic, `aria-expanded` doit valoir \"true\"" },
+      { expr: `document.getElementById("menu").classList.contains("ouvert")`, expect: false, label: "Après deux clics, le menu doit être fermé" },
+      { expr: `document.getElementById("burger").getAttribute("aria-expanded")`, expect: "false", label: "Après deux clics, `aria-expanded` doit valoir \"false\"" },
+    ],
+    expectLogs: [],
+    mustContain: [],
+    solution: [{ name: "script.js", code: BURGER_SCRIPT.trimEnd() }],
+    hints: [
+      "Deux actions à regrouper : changer la classe ET l’attribut. Mets-les dans des fonctions `ouvrir()` et `fermer()`.",
+      "Dans l’écouteur : `if (menu.classList.contains(\"ouvert\")) { fermer(); } else { ouvrir(); }`.",
+      "`menu.classList.add(\"ouvert\")` et `bouton.setAttribute(\"aria-expanded\", \"true\")` dans `ouvrir()`.",
+    ],
+    explanation: "On lit l’état dans la classe `ouvert`, et on appelle `ouvrir()` ou `fermer()` : chaque fonction met à jour la classe et l’attribut ensemble, pour qu’ils ne se contredisent jamais.",
+    retain: "Regroupe classe et `aria-expanded` dans `ouvrir()` / `fermer()`.",
+  },
+  {
+    id: "men-4", lesson: "menu", notion: "Menus", type: "lab", difficulty: 2,
+    question: "Le bouton ouvre déjà le menu (code fourni). Ajoute la fermeture avec la touche Échap, où que soit le focus.",
+    files: labFiles(BURGER_BODY, BURGER_SCRIPT + `
+// Ajoute la fermeture avec Échap
+`, { lockHtml: true, lockCss: true, cssCode: BURGER_CSS }),
+    actions: [{ do: "click", target: "#burger" }, { do: "key", target: "document", type: "keydown", key: "Escape" }],
+    tests: [
+      { expr: `document.getElementById("menu").classList.contains("ouvert")`, expect: true, afterAction: 0, label: "Après un clic sur le bouton, le menu doit être ouvert" },
+      { expr: `document.getElementById("menu").classList.contains("ouvert")`, expect: false, label: "Après Échap, le menu doit être fermé" },
+      { expr: `document.getElementById("burger").getAttribute("aria-expanded")`, expect: "false", label: "Après Échap, `aria-expanded` doit valoir \"false\"" },
+    ],
+    expectLogs: [],
+    mustContain: [{ file: "script.js", re: "Escape", msg: "Compare `event.key` avec `\"Escape\"`." }],
+    solution: [{ name: "script.js", code: BURGER_SCRIPT + `
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    fermer();
+  }
+});` }],
+    hints: [
+      "Une touche valable partout : écoute `keydown` sur `document`.",
+      "Teste `event.key === \"Escape\"`.",
+      "Appelle `fermer()` : elle met déjà à jour la classe et l’attribut.",
+    ],
+    explanation: "L’écouteur sur `document` reçoit toutes les touches. Quand c’est Échap, `fermer()` retire la classe et met `aria-expanded` à jour.",
+    retain: "`document.addEventListener(\"keydown\", ...)` pour un raccourci global.",
+  },
+  {
+    id: "men-5", lesson: "menu", notion: "Menus", type: "lab", difficulty: 3,
+    question: "Ferme le menu quand on clique en dehors de lui. Un clic dans le menu (sur un lien) ou sur le bouton ne doit pas le fermer.",
+    files: labFiles(BURGER_BODY, BURGER_SCRIPT + `
+// Ferme le menu quand on clique en dehors
+`, { lockHtml: true, lockCss: true, cssCode: BURGER_CSS }),
+    actions: [
+      { do: "click", target: "#burger" },
+      { do: "click", target: "#menu a" },
+      { do: "click", target: "#contenu" },
+    ],
+    tests: [
+      { expr: `document.getElementById("menu").classList.contains("ouvert")`, expect: true, afterAction: 1, label: "Un clic sur un lien du menu ne doit pas le fermer" },
+      { expr: `document.getElementById("menu").classList.contains("ouvert")`, expect: false, label: "Un clic sur le contenu doit fermer le menu" },
+    ],
+    expectLogs: [],
+    mustContain: [{ file: "script.js", re: "contains", msg: "Utilise `menu.contains(event.target)` pour savoir si le clic est dans le menu." }],
+    solution: [{ name: "script.js", code: BURGER_SCRIPT + `
+document.addEventListener("click", (event) => {
+  if (!menu.contains(event.target) && !bouton.contains(event.target)) {
+    fermer();
+  }
+});` }],
+    hints: [
+      "Écoute `click` sur `document`, et teste d’où vient le clic.",
+      "Le clic est « en dehors » s’il n’est ni dans le menu, ni sur le bouton.",
+      "`if (!menu.contains(event.target) && !bouton.contains(event.target)) { fermer(); }`",
+    ],
+    explanation: "Tous les clics remontent jusqu’à `document`. On ferme seulement si la cible n’est ni dans le menu ni sur le bouton : sinon le bouton fermerait le menu juste après l’avoir ouvert.",
+    retain: "Clic en dehors : `!zone.contains(event.target)`, en excluant le bouton.",
+  },
+
+  // ═════════════ NIVEAU 5 — Modale ═════════════
+  {
+    id: "mod-1", lesson: "modale", notion: "Modales", type: "qcm", difficulty: 2,
+    question: "Pourquoi tester `event.target === fond` dans l’écouteur de clic du fond ?",
+    options: [
+      "Un clic dans la fenêtre remonte jusqu’au fond : il faut distinguer un clic sur le fond d’un clic dans la fenêtre.",
+      "Parce que `fond` n’accepte pas les clics autrement.",
+      "Pour empêcher la touche Échap de fermer la modale.",
+      "Parce que `event.target` est toujours le fond.",
+    ],
+    answer: 0,
+    why: [
+      "",
+      "Le fond accepte les clics sans condition : c’est justement le problème.",
+      "Le test n’a aucun rapport avec la touche Échap.",
+      "`event.target` est l’élément le plus précis qui a été cliqué : fond ou élément de la fenêtre.",
+    ],
+    hints: [
+      "La fenêtre est à l’intérieur du fond. Que devient un clic fait sur la fenêtre ?",
+      "Il remonte jusqu’au fond, qui le reçoit aussi.",
+      "On compare la cible au fond : elle n’est égale au fond que pour un clic en dehors de la fenêtre.",
+    ],
+    explanation: "Les événements remontent : un clic dans la fenêtre atteint aussi l’écouteur du fond. `event.target === fond` n’est vrai que si le clic a eu lieu directement sur le fond.",
+    retain: "`event.target === fond` : clic en dehors de la fenêtre.",
+  },
+  {
+    id: "mod-2", lesson: "modale", notion: "Modales", type: "vf", difficulty: 1,
+    statement: "`role=\"dialog\"` et `aria-modal=\"true\"` aident les lecteurs d’écran à comprendre que la fenêtre est une boîte de dialogue modale.",
+    answer: true,
+    why: "Ces attributs décrivent la fenêtre : une boîte de dialogue qui bloque l’accès au reste de la page.",
+    hints: [
+      "Ce sont des attributs d’accessibilité (`aria-...`, `role`).",
+      "Ils décrivent le rôle et le comportement de la fenêtre.",
+      "L’affirmation est vraie.",
+    ],
+    explanation: "`role=\"dialog\"` précise le rôle de l’élément ; `aria-modal=\"true\"` indique que le reste de la page est inactif tant qu’elle est ouverte.",
+    retain: "`role=\"dialog\"` + `aria-modal=\"true\"`.",
+  },
+  {
+    id: "mod-3", lesson: "modale", notion: "Modales", type: "lab", difficulty: 2,
+    question: "Au clic sur `#ouvrir`, affiche la modale (`#fond`) et place le focus sur `#fermer`. Au clic sur `#fermer`, cache-la et rends le focus à `#ouvrir`.",
+    files: labFiles(MODALE_BODY, `// Ouvrir et fermer la modale
+`, { lockHtml: true, lockCss: true, cssCode: MODALE_CSS }),
+    actions: [{ do: "click", target: "#ouvrir" }, { do: "click", target: "#fermer" }],
+    tests: [
+      { expr: `document.getElementById("fond").hidden`, expect: false, afterAction: 0, label: "Après un clic sur « Ouvrir », la modale doit être visible" },
+      { expr: `document.activeElement.id`, expect: "fermer", afterAction: 0, label: "Le focus doit être sur le bouton « Fermer »" },
+      { expr: `document.getElementById("fond").hidden`, expect: true, label: "Après un clic sur « Fermer », la modale doit être cachée" },
+      { expr: `document.activeElement.id`, expect: "ouvrir", label: "Le focus doit retourner au bouton « Ouvrir »" },
+    ],
+    expectLogs: [],
+    mustContain: [],
+    solution: [{ name: "script.js", code: MODALE_SCRIPT.trimEnd() }],
+    hints: [
+      "Deux fonctions : une pour ouvrir, une pour fermer, appelées par les deux boutons.",
+      "`fond.hidden = false;` puis `fermer.focus();` pour ouvrir. L’inverse pour fermer.",
+      "`element.focus()` donne le focus à un élément.",
+    ],
+    explanation: "`hidden` affiche ou cache la modale. `focus()` déplace le focus dans la modale à l’ouverture, puis le rend au bouton d’ouverture à la fermeture.",
+    retain: "`fond.hidden` + `focus()` à l’ouverture et à la fermeture.",
+  },
+  {
+    id: "mod-4", lesson: "modale", notion: "Modales", type: "lab", difficulty: 2,
+    question: "L’ouverture et la fermeture par bouton sont fournies. Ajoute la fermeture avec la touche Échap, seulement quand la modale est ouverte.",
+    files: labFiles(MODALE_BODY, MODALE_SCRIPT + `
+// Ajoute la fermeture avec Échap
+`, { lockHtml: true, lockCss: true, cssCode: MODALE_CSS }),
+    actions: [{ do: "click", target: "#ouvrir" }, { do: "key", target: "document", type: "keydown", key: "Escape" }],
+    tests: [
+      { expr: `document.getElementById("fond").hidden`, expect: false, afterAction: 0, label: "Après un clic sur « Ouvrir », la modale doit être visible" },
+      { expr: `document.getElementById("fond").hidden`, expect: true, label: "Après Échap, la modale doit être cachée" },
+    ],
+    expectLogs: [],
+    mustContain: [{ file: "script.js", re: "Escape", msg: "Compare `event.key` avec `\"Escape\"`." }],
+    solution: [{ name: "script.js", code: MODALE_SCRIPT + `
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !fond.hidden) {
+    fermerModale();
+  }
+});` }],
+    hints: [
+      "Écoute `keydown` sur `document`.",
+      "Deux conditions : la touche est `\"Escape\"` ET la modale est ouverte (`!fond.hidden`).",
+      "Appelle `fermerModale()`, qui rend aussi le focus.",
+    ],
+    explanation: "Le test `!fond.hidden` évite d’exécuter la fermeture (et de déplacer le focus) quand la modale est déjà fermée.",
+    retain: "Échap : `event.key === \"Escape\"` et la modale doit être ouverte.",
+  },
+  {
+    id: "mod-5", lesson: "modale", notion: "Modales", type: "lab", difficulty: 3,
+    question: "Ferme la modale par un clic sur le fond, mais pas par un clic dans la fenêtre elle-même (`.modale`).",
+    files: labFiles(MODALE_BODY, MODALE_SCRIPT + `
+// Ferme la modale par un clic sur le fond (mais pas dans la fenêtre)
+`, { lockHtml: true, lockCss: true, cssCode: MODALE_CSS }),
+    actions: [
+      { do: "click", target: "#ouvrir" },
+      { do: "click", target: ".modale" },
+      { do: "click", target: "#fond" },
+    ],
+    tests: [
+      { expr: `document.getElementById("fond").hidden`, expect: false, afterAction: 1, label: "Un clic dans la fenêtre ne doit pas fermer la modale" },
+      { expr: `document.getElementById("fond").hidden`, expect: true, label: "Un clic sur le fond doit fermer la modale" },
+    ],
+    expectLogs: [],
+    mustContain: [{ file: "script.js", re: "event\\.target", msg: "Utilise `event.target` pour savoir où le clic a eu lieu." }],
+    solution: [{ name: "script.js", code: MODALE_SCRIPT + `
+fond.addEventListener("click", (event) => {
+  if (event.target === fond) {
+    fermerModale();
+  }
+});` }],
+    hints: [
+      "Écoute `click` sur `fond`. Un clic dans la fenêtre remonte jusqu’à lui.",
+      "Compare `event.target` au fond.",
+      "`if (event.target === fond) { fermerModale(); }`",
+    ],
+    explanation: "Un clic dans la fenêtre remonte jusqu’au fond, mais `event.target` désigne alors la fenêtre ou un de ses enfants : la condition est fausse et la modale reste ouverte.",
+    retain: "`if (event.target === fond)`.",
+  },
+
+  // ═════════════ NIVEAU 5 — Onglets ═════════════
+  {
+    id: "ong-1", lesson: "onglets", notion: "Onglets", type: "qcm", difficulty: 2,
+    question: "Que fait `element.classList.toggle(\"actif\", condition)` quand `condition` vaut `false` ?",
+    options: [
+      "Il retire la classe `actif` (ou la laisse absente).",
+      "Il ajoute la classe `actif`.",
+      "Il inverse la présence de la classe.",
+      "Il provoque une erreur.",
+    ],
+    answer: 0,
+    why: [
+      "",
+      "C’est ce qu’il fait quand la condition vaut `true`.",
+      "L’inversion, c’est `toggle` sans second argument ; avec la condition, la classe est forcée.",
+      "Aucune erreur : le second argument est prévu pour cela.",
+    ],
+    hints: [
+      "Le second argument force le résultat : présente ou absente.",
+      "Avec `true`, la classe est ajoutée.",
+      "Avec `false`, elle est retirée.",
+    ],
+    explanation: "Avec un second argument, `toggle` ajoute la classe si la condition est vraie, la retire si elle est fausse. C’est un `if` / `else` condensé.",
+    retain: "`classList.toggle(\"nom\", condition)` : présente si la condition est vraie.",
+  },
+  {
+    id: "ong-2", lesson: "onglets", notion: "Onglets", type: "predict", difficulty: 2, env: "browser",
+    question: "Ce script est exécuté en bas du body. Qu’affiche-t-il ? (une ligne par `console.log`)",
+    code: `<button id="b" data-cible="panneau-2">Deux</button>
+<script>
+  const b = document.getElementById("b");
+  console.log(b.dataset.cible);
+  console.log("panneau-2" === b.dataset.cible);
+</script>`,
+    rows: 2,
+    answers: ["panneau-2\ntrue"],
+    common: { "cible\ntrue": "Le nom de l’attribut est `data-cible` : `dataset.cible` donne sa valeur, ici `panneau-2`." },
+    hints: [
+      "`dataset.cible` lit l’attribut `data-cible`.",
+      "Sa valeur est du texte : `panneau-2`.",
+      "Première ligne : `panneau-2`. Deuxième ligne : la comparaison est vraie.",
+    ],
+    explanation: "`b.dataset.cible` renvoie la valeur de l’attribut `data-cible`, soit `\"panneau-2\"`. La comparaison avec le même texte vaut `true`.",
+    retain: "`element.dataset.nom` lit l’attribut `data-nom`.",
+  },
+  {
+    id: "ong-3", lesson: "onglets", notion: "Onglets", type: "lab", difficulty: 3,
+    question: "Au clic sur un onglet : donne-lui la classe `actif` (et retire-la aux autres), et n’affiche que son panneau (celui dont l’id est dans `data-cible`).",
+    files: labFiles(ONGLETS_BODY, `const onglets = document.querySelectorAll(".onglet");
+const panneaux = document.querySelectorAll(".panneau");
+
+// Au clic sur un onglet : classe actif + bon panneau visible
+`, { lockHtml: true, lockCss: true, cssCode: ONGLETS_CSS }),
+    actions: [{ do: "click", target: ".onglet:nth-of-type(2)" }],
+    tests: [
+      { expr: `Array.from(document.querySelectorAll(".panneau")).map((p) => p.hidden)`, expect: [true, false, true], label: "Seul le panneau 2 doit être visible" },
+      { expr: `Array.from(document.querySelectorAll(".onglet")).map((o) => o.classList.contains("actif"))`, expect: [false, true, false], label: "Seul l’onglet 2 doit avoir la classe `actif`" },
+    ],
+    expectLogs: [],
+    mustContain: [{ file: "script.js", re: "dataset", msg: "Utilise `onglet.dataset.cible` pour retrouver le panneau." }],
+    solution: [{ name: "script.js", code: `const onglets = document.querySelectorAll(".onglet");
+const panneaux = document.querySelectorAll(".panneau");
+
+function activer(onglet) {
+  onglets.forEach((o) => {
+    o.classList.toggle("actif", o === onglet);
+  });
+  panneaux.forEach((p) => {
+    p.hidden = p.id !== onglet.dataset.cible;
+  });
+}
+
+onglets.forEach((onglet) => {
+  onglet.addEventListener("click", () => {
+    activer(onglet);
+  });
+});` }],
+    hints: [
+      "Parcours les onglets pour ajouter un écouteur à chacun, et écris une fonction `activer(onglet)`.",
+      "Dans `activer`, parcours tous les onglets (`toggle(\"actif\", o === onglet)`) puis tous les panneaux.",
+      "Un panneau est caché sauf si son id est égal à `onglet.dataset.cible` : `p.hidden = p.id !== onglet.dataset.cible;`",
+    ],
+    explanation: "`activer` met à jour tous les onglets et tous les panneaux : l’onglet cliqué est actif, son panneau est visible, les autres non.",
+    retain: "Boucle sur tous les éléments, avec une condition pour l’élément actif.",
+  },
+  {
+    id: "ong-4", lesson: "onglets", notion: "Onglets", type: "lab", difficulty: 2,
+    question: "Le clic sur un onglet marche déjà (code fourni), mais au chargement aucun panneau n’est visible. Active le premier onglet dès le chargement.",
+    files: labFiles(ONGLETS_BODY, `const onglets = document.querySelectorAll(".onglet");
+const panneaux = document.querySelectorAll(".panneau");
+
+function activer(onglet) {
+  onglets.forEach((o) => {
+    o.classList.toggle("actif", o === onglet);
+  });
+  panneaux.forEach((p) => {
+    p.hidden = p.id !== onglet.dataset.cible;
+  });
+}
+
+onglets.forEach((onglet) => {
+  onglet.addEventListener("click", () => {
+    activer(onglet);
+  });
+});
+
+// Active le premier onglet au chargement
+`, { lockHtml: true, lockCss: true, cssCode: ONGLETS_CSS }),
+    tests: [
+      { expr: `Array.from(document.querySelectorAll(".panneau")).map((p) => p.hidden)`, expect: [false, true, true], label: "Au chargement, seul le panneau 1 doit être visible" },
+      { expr: `Array.from(document.querySelectorAll(".onglet")).map((o) => o.classList.contains("actif"))`, expect: [true, false, false], label: "Au chargement, seul l’onglet 1 doit être actif" },
+    ],
+    expectLogs: [],
+    mustContain: [],
+    solution: [{ name: "script.js", code: `const onglets = document.querySelectorAll(".onglet");
+const panneaux = document.querySelectorAll(".panneau");
+
+function activer(onglet) {
+  onglets.forEach((o) => {
+    o.classList.toggle("actif", o === onglet);
+  });
+  panneaux.forEach((p) => {
+    p.hidden = p.id !== onglet.dataset.cible;
+  });
+}
+
+onglets.forEach((onglet) => {
+  onglet.addEventListener("click", () => {
+    activer(onglet);
+  });
+});
+
+activer(onglets[0]);` }],
+    hints: [
+      "Il suffit d’appeler la fonction `activer` une fois, au chargement.",
+      "Avec quel onglet ? Le premier de la liste `onglets`.",
+      "`activer(onglets[0]);`",
+    ],
+    explanation: "`onglets[0]` est le premier onglet de la liste. Appeler `activer(onglets[0])` à la fin du script lui donne la classe `actif` et affiche son panneau dès le départ.",
+    retain: "Appelle la fonction d’affichage aussi au chargement.",
+  },
+  {
+    id: "ong-5", lesson: "onglets", notion: "Onglets", type: "qcm", label: "Trouver l’erreur", difficulty: 2,
+    question: "Cliquer sur l’onglet provoque `TypeError: Cannot set properties of null (setting 'hidden')`. Pourquoi ?",
+    code: `<button class="onglet" data-cible="panneau2">Deux</button>
+<div class="panneau" id="p2">...</div>
+
+const panneau = document.getElementById(onglet.dataset.cible);
+panneau.hidden = false;`,
+    options: [
+      "`data-cible` vaut \"panneau2\", mais aucun élément n’a cet id (le panneau s’appelle `p2`) : `getElementById` renvoie `null`.",
+      "`hidden` n’existe pas pour un `div`.",
+      "Il faut écrire `document.getElementById(\"onglet.dataset.cible\")`.",
+      "Il faut utiliser `querySelector` à la place de `getElementById`.",
+    ],
+    answer: 0,
+    why: [
+      "",
+      "`hidden` existe sur tous les éléments.",
+      "Avec des guillemets, on chercherait un id contenant littéralement ce texte.",
+      "`querySelector` aurait le même problème : l’élément n’existe pas sous ce nom.",
+    ],
+    hints: [
+      "L’erreur indique que `panneau` vaut `null`.",
+      "Compare la valeur de `data-cible` avec l’id du panneau.",
+      "Ils doivent être identiques : `data-cible=\"p2\"`.",
+    ],
+    explanation: "`getElementById(\"panneau2\")` ne trouve rien : l’id du panneau est `p2`. Le résultat est `null`, et lire `.hidden` dessus provoque l’erreur. Les deux textes doivent être identiques.",
+    retain: "`data-cible` doit correspondre exactement à l’id du panneau.",
+  },
+
+  // ═════════════ NIVEAU 5 — Validation en direct ═════════════
+  {
+    id: "val-1", lesson: "validation", notion: "Validation en direct", type: "qcm", difficulty: 2,
+    question: "Pourquoi ajouter `^` au début et `$` à la fin d’une expression régulière de validation ?",
+    options: [
+      "Pour que tout le texte corresponde, et pas seulement un morceau.",
+      "Pour que l’expression ne tienne pas compte des majuscules.",
+      "Pour accélérer la vérification.",
+      "Parce que `test()` ne marche pas sans eux.",
+    ],
+    answer: 0,
+    why: [
+      "",
+      "Ce n’est pas leur rôle : l’option qui ignore la casse est le drapeau `i`.",
+      "La vitesse n’est pas en cause.",
+      "`test()` marche sans eux, mais accepte alors un texte qui contient seulement un morceau valide.",
+    ],
+    hints: [
+      "Sans ces symboles, la regex peut correspondre à une partie du texte.",
+      "`^` : début du texte. `$` : fin du texte.",
+      "Ils exigent que le texte entier corresponde.",
+    ],
+    explanation: "`^` et `$` ancrent la regex au début et à la fin : « mon mail est a@b.fr, merci » ne passe plus.",
+    retain: "`^...$` : tout le texte doit correspondre.",
+  },
+  {
+    id: "val-2", lesson: "validation", notion: "Validation en direct", type: "vf", difficulty: 1,
+    statement: "`champ.checkValidity()` renvoie `true` ou `false` selon les contraintes HTML du champ (`required`, `min`, `max`, `type=\"email\"`…).",
+    answer: true,
+    why: "Le navigateur évalue lui-même les contraintes écrites en HTML. `checkValidity()` répond par un booléen ; `champ.validity` donne le détail.",
+    hints: [
+      "Le navigateur sait valider un champ à partir de ses attributs HTML.",
+      "La méthode répond par un booléen.",
+      "L’affirmation est vraie.",
+    ],
+    explanation: "`checkValidity()` renvoie `true` si le champ respecte toutes ses contraintes, `false` sinon.",
+    retain: "`checkValidity()` : la validation intégrée du navigateur.",
+  },
+  {
+    id: "val-3", lesson: "validation", notion: "Validation en direct", type: "lab", difficulty: 3,
+    question: "Valide l’email en direct. À chaque saisie : si le texte (sans espaces autour) ne ressemble pas à `x@y.z`, écris « Email invalide » dans `#erreur-email` ; sinon vide ce message. Le bouton `#envoyer` n’est activé que pour un email valide. Utilise une fonction `emailValide(texte)`.",
+    files: labFiles(`<form id="formulaire" novalidate>
+  <input id="email" type="text" placeholder="Ton email">
+  <small id="erreur-email"></small>
+  <button id="envoyer" type="submit" disabled>Envoyer</button>
+</form>`, `// function emailValide(texte) { ... }  →  true ou false
+// Réagis à l'événement input du champ
+`, { lockHtml: true }),
+    actions: [{ do: "input", target: "#email", value: "abc" }, { do: "input", target: "#email", value: "a@b.fr" }],
+    tests: [
+      { expr: `document.getElementById("erreur-email").textContent`, expect: "Email invalide", afterAction: 0, label: "« abc » : le message « Email invalide » doit s’afficher" },
+      { expr: `document.getElementById("envoyer").disabled`, expect: true, afterAction: 0, label: "« abc » : le bouton doit rester désactivé" },
+      { expr: `document.getElementById("erreur-email").textContent`, expect: "", label: "« a@b.fr » : le message d’erreur doit disparaître" },
+      { expr: `document.getElementById("envoyer").disabled`, expect: false, label: "« a@b.fr » : le bouton doit être activé" },
+      { expr: `emailValide(" x@y.zz ".trim())`, expect: true, label: "`emailValide(\"x@y.zz\")` doit renvoyer `true`" },
+      { expr: `emailValide("x@y")`, expect: false, label: "`emailValide(\"x@y\")` doit renvoyer `false`" },
+    ],
+    expectLogs: [],
+    mustContain: [{ file: "script.js", re: "function\\s+emailValide", msg: "Écris une fonction `emailValide(texte)`." }],
+    solution: [{ name: "script.js", code: `const champ = document.getElementById("email");
+const erreur = document.getElementById("erreur-email");
+const envoyer = document.getElementById("envoyer");
+
+function emailValide(texte) {
+  return /^\\S+@\\S+\\.\\S+$/.test(texte);
+}
+
+champ.addEventListener("input", () => {
+  const valide = emailValide(champ.value.trim());
+  if (valide) {
+    erreur.textContent = "";
+  } else {
+    erreur.textContent = "Email invalide";
+  }
+  envoyer.disabled = !valide;
+});` }],
+    hints: [
+      "Écris d’abord la fonction `emailValide(texte)`, qui renvoie `true` ou `false`. Ensuite, utilise-la dans un écouteur `input`.",
+      "Une expression régulière simple : `/^\\S+@\\S+\\.\\S+$/.test(texte)`.",
+      "Dans l’écouteur : `const valide = emailValide(champ.value.trim());`, puis le message avec `if` / `else`, puis `envoyer.disabled = !valide;`.",
+    ],
+    explanation: "La fonction `emailValide` ne fait que tester. L’écouteur lit la saisie, appelle la fonction, puis met à jour le message et le bouton d’après le résultat.",
+    retain: "Sépare le test (fonction) de l’affichage (écouteur).",
+  },
+  {
+    id: "val-4", lesson: "validation", notion: "Validation en direct", type: "lab", difficulty: 3,
+    question: "Écris la fonction `motDePasseValide(texte)` : elle renvoie `true` si le texte fait au moins 8 caractères ET contient au moins un chiffre, sinon `false`.",
+    files: labFiles(`<p>Fonction de validation : teste-la dans la console.</p>`, `// function motDePasseValide(texte) { ... }
+`, { lockHtml: true }),
+    tests: [
+      { expr: `motDePasseValide("abcdefgh")`, expect: false, label: "« abcdefgh » (pas de chiffre) doit renvoyer `false`" },
+      { expr: `motDePasseValide("abc12345")`, expect: true, label: "« abc12345 » doit renvoyer `true`" },
+      { expr: `motDePasseValide("a1")`, expect: false, label: "« a1 » (trop court) doit renvoyer `false`" },
+      { expr: `motDePasseValide("12345678")`, expect: true, label: "« 12345678 » doit renvoyer `true`" },
+    ],
+    expectLogs: [],
+    mustContain: [],
+    solution: [{ name: "script.js", code: `function motDePasseValide(texte) {
+  const assezLong = texte.length >= 8;
+  const aUnChiffre = /\\d/.test(texte);
+  return assezLong && aUnChiffre;
+}` }],
+    hints: [
+      "Deux conditions à combiner avec `&&`.",
+      "La longueur : `texte.length >= 8`. Un chiffre : `/\\d/.test(texte)` (`\\d` désigne un chiffre).",
+      "`return texte.length >= 8 && /\\d/.test(texte);`",
+    ],
+    explanation: "On combine deux tests booléens avec `&&` : la longueur, et la présence d’au moins un chiffre grâce à une expression régulière. La fonction renvoie directement le résultat.",
+    retain: "Une fonction de validation renvoie un booléen.",
+  },
+  {
+    id: "val-5", lesson: "validation", notion: "Validation en direct", type: "lab", difficulty: 3,
+    question: "Quand on quitte le champ `#nom` (événement `blur`), affiche « Champ obligatoire » dans `#erreur` s’il est vide (après `trim()`), sinon vide le message.",
+    files: labFiles(`<input id="nom" type="text" placeholder="Ton nom">
+<small id="erreur" style="color: crimson"></small>`, `// Écoute blur sur #nom
+`, { lockHtml: true }),
+    actions: [
+      { do: "event", type: "blur", target: "#nom" },
+      { do: "input", target: "#nom", value: "Léa" },
+      { do: "event", type: "blur", target: "#nom" },
+    ],
+    tests: [
+      { expr: `document.getElementById("erreur").textContent`, expect: "Champ obligatoire", afterAction: 0, label: "Champ vide : « Champ obligatoire » doit s’afficher" },
+      { expr: `document.getElementById("erreur").textContent`, expect: "", label: "Champ rempli : le message doit disparaître" },
+    ],
+    expectLogs: [],
+    mustContain: [{ file: "script.js", re: "blur", msg: "Utilise l’événement `\"blur\"`." }],
+    solution: [{ name: "script.js", code: `const nom = document.getElementById("nom");
+const erreur = document.getElementById("erreur");
+
+nom.addEventListener("blur", () => {
+  if (nom.value.trim() === "") {
+    erreur.textContent = "Champ obligatoire";
+  } else {
+    erreur.textContent = "";
+  }
+});` }],
+    hints: [
+      "`blur` se déclenche quand un élément perd le focus.",
+      "Dans le gestionnaire : teste `nom.value.trim() === \"\"`.",
+      "Écris le message dans `erreur.textContent` dans le `if`, et vide-le dans le `else`.",
+    ],
+    explanation: "L’événement `blur` est envoyé quand on quitte le champ. On y vérifie la valeur, sans espaces, et on affiche ou efface le message.",
+    retain: "`blur` : validation à la sortie du champ.",
+  },
+
+  // ═════════════ NIVEAU 5 — Données et affichage ═════════════
+  {
+    id: "tod-1", lesson: "todo", notion: "Données et affichage", type: "qcm", difficulty: 1,
+    question: "Avec le schéma « données → affichage », quelle étape suit chaque modification du tableau de tâches ?",
+    options: [
+      "L’appel de `afficher()`, qui redessine la liste à partir du tableau.",
+      "La suppression du tableau.",
+      "Le rechargement de la page.",
+      "Rien : la page se met à jour toute seule.",
+    ],
+    answer: 0,
+    why: [
+      "",
+      "Le tableau est la source de vérité : on le garde.",
+      "Aucun rechargement : on redessine seulement la liste.",
+      "Modifier un tableau ne change pas la page : il faut redessiner explicitement.",
+    ],
+    hints: [
+      "Le tableau et la page sont deux choses distinctes.",
+      "Après avoir changé les données, il faut mettre la page à jour.",
+      "La fonction qui reconstruit la liste : `afficher()`.",
+    ],
+    explanation: "Changer le tableau ne modifie pas la page. On appelle ensuite `afficher()`, qui reconstruit la liste d’après les données.",
+    retain: "Modifier les données, puis `afficher()`.",
+  },
+  {
+    id: "tod-2", lesson: "todo", notion: "Données et affichage", type: "predict", difficulty: 3,
+    question: "Qu’affiche ce code ?",
+    code: `const taches = [
+  { texte: "A", fait: false },
+  { texte: "B", fait: true },
+  { texte: "C", fait: true },
+];
+taches.splice(0, 1);
+const restantes = taches.filter((t) => !t.fait);
+console.log(taches.length, restantes.length);`,
+    answers: ["2 0"],
+    common: { "3 1": "`splice(0, 1)` retire la tâche à la position 0 (A) : il reste 2 tâches.", "2 1": "La tâche non faite (A) a été retirée : parmi B et C, toutes deux faites, aucune n’est « restante »." },
+    hints: [
+      "`splice(0, 1)` retire 1 élément à partir de la position 0.",
+      "Il reste B et C. `filter((t) => !t.fait)` garde celles qui ne sont PAS faites.",
+      "Le tableau a 2 éléments, et 0 d’entre eux ne sont pas faits.",
+    ],
+    explanation: "`splice(0, 1)` retire la première tâche (A) : il reste B et C. Les deux sont faites, donc `filter` (qui garde les tâches non faites) renvoie un tableau vide : longueur 0.",
+    retain: "`splice(index, 1)` retire un élément ; `filter` crée un nouveau tableau.",
+  },
+  {
+    id: "tod-3", lesson: "todo", notion: "Données et affichage", type: "lab", difficulty: 3,
+    question: "Écris la fonction `afficher()` qui vide `#liste`, puis crée un `<li>` par tâche du tableau, avec le texte de la tâche et la classe `fait` si la tâche est faite. Appelle-la une fois au chargement.",
+    files: labFiles(`<ul id="liste"></ul>`, `const liste = document.getElementById("liste");
+const taches = [
+  { texte: "Courses", fait: false },
+  { texte: "Ménage", fait: true },
+  { texte: "Devoirs", fait: false },
+];
+
+// function afficher() { ... }
+`, { lockHtml: true, lockCss: true, cssCode: TACHES_CSS }),
+    tests: [
+      { expr: `Array.from(document.querySelectorAll("#liste li")).map((li) => li.textContent)`, expect: ["Courses", "Ménage", "Devoirs"], label: "La liste doit contenir Courses, Ménage, Devoirs" },
+      { expr: `Array.from(document.querySelectorAll("#liste li")).map((li) => li.classList.contains("fait"))`, expect: [false, true, false], label: "Seule la tâche « Ménage » doit avoir la classe `fait`" },
+    ],
+    expectLogs: [],
+    mustContain: [{ file: "script.js", re: "function\\s+afficher", msg: "Écris une fonction `afficher()`." }],
+    solution: [{ name: "script.js", code: `const liste = document.getElementById("liste");
+const taches = [
+  { texte: "Courses", fait: false },
+  { texte: "Ménage", fait: true },
+  { texte: "Devoirs", fait: false },
+];
+
+function afficher() {
+  liste.replaceChildren();
+  taches.forEach((tache) => {
+    const li = document.createElement("li");
+    li.textContent = tache.texte;
+    li.classList.toggle("fait", tache.fait);
+    liste.append(li);
+  });
+}
+
+afficher();` }],
+    hints: [
+      "Commence par vider la liste, puis parcours le tableau avec `forEach`.",
+      "Pour chaque tâche : `createElement(\"li\")`, `textContent`, puis `classList.toggle(\"fait\", tache.fait)`.",
+      "N’oublie pas `liste.append(li)` et l’appel final `afficher();`.",
+    ],
+    explanation: "`afficher()` reconstruit la liste à partir du tableau. `classList.toggle(\"fait\", tache.fait)` ajoute la classe seulement pour les tâches faites.",
+    retain: "`afficher()` : vider, puis reconstruire à partir des données.",
+  },
+  {
+    id: "tod-4", lesson: "todo", notion: "Données et affichage", type: "lab", difficulty: 3,
+    question: "L’affichage est fourni. Écris l’ajout d’une tâche : à l’envoi du formulaire, empêche le rechargement, ajoute `{ texte, fait: false }` au tableau (si le champ n’est pas vide), vide le champ et redessine la liste.",
+    files: labFiles(`<form id="formulaire">
+  <input id="champ" type="text" placeholder="Nouvelle tâche">
+  <button type="submit">Ajouter</button>
+</form>
+<ul id="liste"></ul>`, `const formulaire = document.getElementById("formulaire");
+const champ = document.getElementById("champ");
+const liste = document.getElementById("liste");
+const taches = [
+  { texte: "Courses", fait: false },
+  { texte: "Ménage", fait: true },
+  { texte: "Devoirs", fait: false },
+];
+
+function afficher() {
+  liste.replaceChildren();
+  taches.forEach((tache) => {
+    const li = document.createElement("li");
+    li.textContent = tache.texte;
+    li.classList.toggle("fait", tache.fait);
+    liste.append(li);
+  });
+}
+
+afficher();
+
+// Écris l'ajout d'une tâche
+`, { lockHtml: true, lockCss: true, cssCode: TACHES_CSS }),
+    actions: [{ do: "input", target: "#champ", value: "Lire" }, { do: "submit", target: "#formulaire" }],
+    tests: [
+      { expr: `document.querySelectorAll("#liste li").length`, expect: 4, label: "La liste doit contenir 4 tâches" },
+      { expr: `document.querySelector("#liste li:last-child").textContent`, expect: "Lire", label: "La dernière tâche doit être « Lire »" },
+      { expr: `taches.length`, expect: 4, label: "Le tableau `taches` doit contenir 4 éléments" },
+      { expr: `document.getElementById("champ").value`, expect: "", label: "Le champ doit être vidé" },
+    ],
+    expectLogs: [],
+    forbidLogs: [{ level: "warn", text: "formulaire a été envoyé", label: "Le formulaire est encore envoyé : appelle `event.preventDefault()`." }],
+    mustContain: [{ file: "script.js", re: "taches\\.push", msg: "Ajoute la tâche au tableau avec `taches.push(...)`." }],
+    solution: [{ name: "script.js", code: `const formulaire = document.getElementById("formulaire");
+const champ = document.getElementById("champ");
+const liste = document.getElementById("liste");
+const taches = [
+  { texte: "Courses", fait: false },
+  { texte: "Ménage", fait: true },
+  { texte: "Devoirs", fait: false },
+];
+
+function afficher() {
+  liste.replaceChildren();
+  taches.forEach((tache) => {
+    const li = document.createElement("li");
+    li.textContent = tache.texte;
+    li.classList.toggle("fait", tache.fait);
+    liste.append(li);
+  });
+}
+
+afficher();
+
+formulaire.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const texte = champ.value.trim();
+  if (texte === "") {
+    return;
+  }
+  taches.push({ texte: texte, fait: false });
+  champ.value = "";
+  afficher();
+});` }],
+    hints: [
+      "Écoute `submit` sur le formulaire, et commence par `event.preventDefault()`.",
+      "On ajoute des DONNÉES, pas un élément : `taches.push({ texte: texte, fait: false });`.",
+      "Termine par `champ.value = \"\";` et `afficher();`.",
+    ],
+    explanation: "Le gestionnaire modifie seulement le tableau (`push`), puis appelle `afficher()`, qui redessine toute la liste. On ne crée aucun `li` ici : c’est le travail de `afficher()`.",
+    retain: "Ajouter = `push` dans le tableau, puis `afficher()`.",
+  },
+  {
+    id: "tod-5", lesson: "todo", notion: "Données et affichage", type: "lab", difficulty: 3,
+    question: "L’affichage fournit un bouton « ✕ » dans chaque tâche (avec son index dans `data-index`). Écris la suppression avec un seul écouteur sur `#liste` : retire la tâche du tableau avec `splice`, puis redessine.",
+    files: labFiles(`<ul id="liste"></ul>`, `const liste = document.getElementById("liste");
+const taches = [
+  { texte: "A", fait: false },
+  { texte: "B", fait: false },
+  { texte: "C", fait: false },
+];
+
+function afficher() {
+  liste.replaceChildren();
+  taches.forEach((tache, index) => {
+    const li = document.createElement("li");
+    li.textContent = tache.texte;
+    li.dataset.index = index;
+
+    const supprimer = document.createElement("button");
+    supprimer.textContent = "✕";
+    supprimer.classList.add("supprimer");
+    li.append(supprimer);
+
+    liste.append(li);
+  });
+}
+
+afficher();
+
+// Écris la suppression (un seul écouteur sur la liste)
+`, { lockHtml: true, lockCss: true, cssCode: TACHES_CSS }),
+    actions: [{ do: "click", target: "#liste li:nth-child(2) .supprimer" }],
+    tests: [
+      { expr: `Array.from(document.querySelectorAll("#liste li")).map((li) => li.firstChild.textContent)`, expect: ["A", "C"], label: "Après la suppression de « B », il doit rester A et C" },
+      { expr: `taches.map((t) => t.texte)`, expect: ["A", "C"], label: "Le tableau `taches` doit aussi être mis à jour" },
+    ],
+    expectLogs: [],
+    mustContain: [{ file: "script.js", re: "splice", msg: "Retire la tâche du tableau avec `taches.splice(index, 1)`." }],
+    solution: [{ name: "script.js", code: `const liste = document.getElementById("liste");
+const taches = [
+  { texte: "A", fait: false },
+  { texte: "B", fait: false },
+  { texte: "C", fait: false },
+];
+
+function afficher() {
+  liste.replaceChildren();
+  taches.forEach((tache, index) => {
+    const li = document.createElement("li");
+    li.textContent = tache.texte;
+    li.dataset.index = index;
+
+    const supprimer = document.createElement("button");
+    supprimer.textContent = "✕";
+    supprimer.classList.add("supprimer");
+    li.append(supprimer);
+
+    liste.append(li);
+  });
+}
+
+afficher();
+
+liste.addEventListener("click", (event) => {
+  if (!event.target.matches(".supprimer")) {
+    return;
+  }
+  const index = Number(event.target.closest("li").dataset.index);
+  taches.splice(index, 1);
+  afficher();
+});` }],
+    hints: [
+      "Écoute `click` sur `#liste` et ne traite que les clics sur `.supprimer`.",
+      "L’index se lit dans `event.target.closest(\"li\").dataset.index`. C’est du texte : `Number(...)`.",
+      "`taches.splice(index, 1);` puis `afficher();`",
+    ],
+    explanation: "Le bouton retrouve son `li` avec `closest`, qui porte l’index dans `data-index`. `splice(index, 1)` retire la tâche du tableau, puis `afficher()` redessine la liste (et recalcule les index).",
+    retain: "Supprimer = `splice` dans le tableau, puis `afficher()`.",
   },
 
 ];

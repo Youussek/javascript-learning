@@ -409,30 +409,60 @@ function renderQuickReview() {
 }
 
 // ═══════════ Projets ═══════════
+// Certains projets se débloquent quand un niveau est assez avancé (project.unlock).
+function projectLocked(project) {
+  if (!project.unlock) return false;
+  return moduleStats(project.unlock.module).percent < project.unlock.percent;
+}
+
+function unlockText(project) {
+  const module = getModule(project.unlock.module);
+  return "Niveau " + module.number + " : " + moduleStats(module.id).percent + " %. Le projet se débloque à " + project.unlock.percent + " %.";
+}
+
 function renderProjects() {
   const finished = PROJECTS.filter((p) => getProjectState(p.id).done).length;
-  const open = PROJECTS.filter((p) => p.available).length;
+  const open = PROJECTS.filter((p) => p.available && !projectLocked(p)).length;
   return h("div", { class: "page" },
     pageTitle("Projets", "Des projets de plus en plus difficiles, à construire étape par étape. Chaque étape se vérifie automatiquement, avec des indices progressifs ; la correction finale n’apparaît qu’une fois le projet terminé."),
-    para(finished + " projet" + (finished > 1 ? "s" : "") + " terminé" + (finished > 1 ? "s" : "") + " sur " + open + " disponibles.", "muted"),
+    para(finished + " projet" + (finished > 1 ? "s" : "") + " terminé" + (finished > 1 ? "s" : "") + " sur " + open + " débloqué" + (open > 1 ? "s" : "") + ".", "muted"),
     h("ol", { class: "rows lessons" }, PROJECTS.map((project, index) => {
       const record = getProjectState(project.id);
-      const done = project.available ? projectStepsDone(project) : 0;
-      return h("li", { class: "row" + (project.available ? "" : " locked") },
+      const locked = project.available && projectLocked(project);
+      const done = project.available && !locked ? projectStepsDone(project) : 0;
+      let note = project.goal;
+      if (!project.available) note += " Disponible avec : " + project.needs + ".";
+      else if (locked) note += " " + unlockText(project);
+      return h("li", { class: "row" + (project.available && !locked ? "" : " locked") },
         h("span", { class: "num", "aria-hidden": "true" }, index + 1),
         h("div", { class: "row-main" },
-          project.available ? link("/projet/" + project.id, project.title, "row-title") : h("p", { class: "row-title" }, project.title),
-          h("p", { class: "muted small" }, project.goal + (project.available ? "" : " Disponible avec : " + project.needs + "."))),
+          project.available && !locked ? link("/projet/" + project.id, project.title, "row-title") : h("p", { class: "row-title" }, project.title),
+          h("p", { class: "muted small" }, note)),
         h("span", { class: "badge d" + project.difficulty }, DIFFICULTY_LABELS[project.difficulty]),
-        project.available
-          ? (record.done ? h("span", { class: "status ok" }, "✓ Terminé") : h("span", { class: "status todo" }, done + " / " + project.steps.length + " étapes"))
-          : h("span", { class: "badge soon" }, "Bientôt"));
+        !project.available
+          ? h("span", { class: "badge soon" }, "Bientôt")
+          : locked
+            ? h("span", { class: "badge soon" }, "Verrouillé")
+            : (record.done ? h("span", { class: "status ok" }, "✓ Terminé") : h("span", { class: "status todo" }, done + " / " + project.steps.length + " étapes")));
     })));
 }
 
 function renderProject(id) {
   const project = getProject(id);
   if (!project || !project.available) return renderNotFound();
+  if (projectLocked(project)) {
+    const module = getModule(project.unlock.module);
+    const percent = moduleStats(module.id).percent;
+    return h("div", { class: "page" },
+      h("p", { class: "crumbs" }, link("/projets", "Projets"), " / " + project.title),
+      pageTitle(project.title, project.goal),
+      h("div", { class: "panel" },
+        h("h2", {}, "Projet verrouillé"),
+        para("Ce projet reprend ce que tu apprends au niveau " + module.number + " (" + module.title + "). Il se débloque quand tu as validé " + project.unlock.percent + " % de ce niveau."),
+        bar(percent),
+        para("Ta progression dans le niveau " + module.number + " : " + percent + " %.", "muted"),
+        h("div", { class: "toolbar" }, link("/cours", "Aller aux cours", "btn primary"), link("/exercices", "Faire des exercices", "btn"))));
+  }
   const lab = renderLab({ files: project.files, previewHeight: project.previewHeight, tips: true });
   const saved = getProjectState(id).draft;
   if (saved) Object.keys(saved).forEach((name) => lab.setCode(name, saved[name]));
@@ -624,9 +654,10 @@ function renderProgressPage() {
       h("h2", {}, "Les projets"),
       h("ul", { class: "rows compact" }, PROJECTS.filter((p) => p.available).map((project) => {
         const record = getProjectState(project.id);
+        const locked = projectLocked(project);
         return h("li", { class: "row" },
-          h("div", { class: "row-main" }, link("/projet/" + project.id, project.title, "row-title")),
-          h("span", { class: "status " + (record.done ? "ok" : "todo") }, record.done ? "✓ Terminé" : projectStepsDone(project) + " / " + project.steps.length + " étapes"));
+          h("div", { class: "row-main" }, locked ? h("p", { class: "row-title" }, project.title) : link("/projet/" + project.id, project.title, "row-title")),
+          h("span", { class: "status " + (record.done ? "ok" : "todo") }, locked ? "Verrouillé" : record.done ? "✓ Terminé" : projectStepsDone(project) + " / " + project.steps.length + " étapes"));
       }))),
 
     h("section", { class: "block danger-zone" },

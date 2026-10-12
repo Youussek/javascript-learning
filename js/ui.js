@@ -77,7 +77,7 @@ function editorTips() {
 
 // ─── Traduire les messages d’erreur en conseils ───
 function explainError(message) {
-  if (/Cannot (read|set) properties of (null|undefined)/.test(message)) return "Tu utilises quelque chose qui n’existe pas (`null` ou `undefined`). Si c’est un élément de la page, le script s’exécute peut-être avant que la page soit construite : place-le en bas du `<body>` ou ajoute `defer`.";
+  if (/Cannot (read|set) properties of (null|undefined)/.test(message)) return "Tu utilises quelque chose qui n’existe pas (`null` ou `undefined`). Si c’est un élément de la page : id ou sélecteur incorrect, ou script exécuté avant que la page soit construite (place-le en bas du `<body>` ou ajoute `defer`).";
   if (/Impossible de charger/.test(message)) return "Vérifie le nom du fichier : il doit être écrit exactement pareil dans l’attribut `src` ou `href` et dans la liste des fichiers.";
   if (/trop longtemps/.test(message)) return "Vérifie ta boucle : sa condition devient-elle un jour fausse ?";
   if (/Assignment to constant/.test(message)) return "Tu essaies de changer une constante. Si la valeur doit changer, déclare-la avec `let`.";

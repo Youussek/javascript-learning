@@ -12,7 +12,8 @@ Ouvre simplement `index.html` dans ton navigateur (double-clic). Ta progression 
 ## Ce que contient la version 1
 
 - **Niveau 1** : 9 cours (variables, types, opérateurs, conditions, boucles, fonctions, tableaux, objets, portée) et 35 exercices.
-- **6 projets guidés** (compteur, mode sombre, to-do list, quiz, calculatrice, validation de formulaire) : chaque projet est découpé en étapes avec indices progressifs, vérification automatique de la page (clics, saisies et touches simulés), correction finale expliquée (débloquée une fois le projet terminé, ou après 3 vérifications ratées) et sauvegarde automatique de ton code. Le 7ᵉ projet (météo) demande `fetch` : il s’ouvrira avec le niveau 6.
+- **Niveau 5 — Interactivité** : 7 cours (l’état de l’interface, accordéon, menu, modale, onglets, validation en direct, données et affichage) et 35 exercices.
+- **7 projets guidés** (compteur, mode sombre, to-do list, quiz, calculatrice, validation de formulaire, mini-site interactif ; ce dernier se débloque à 70 % du niveau 5) : chaque projet est découpé en étapes avec indices progressifs, vérification automatique de la page (clics, saisies et touches simulés), correction finale expliquée (débloquée une fois le projet terminé, ou après 3 vérifications ratées) et sauvegarde automatique de ton code. Le projet météo demande `fetch` : il se débloquera avec le niveau 6.
 - **Niveau 4 — Les événements** : 6 cours (`addEventListener` et `click`, souris, clavier, `input` et `change`, l’objet `event` et la propagation, `submit` et `preventDefault`) et 36 exercices. Les ateliers simulent les clics, touches, saisies et envois de formulaire pour vérifier ton code ; tu peux aussi cliquer toi-même dans l’aperçu, la console se met à jour en direct.
 - **Niveau 3 — Le DOM** : 8 cours (comprendre le DOM, sélectionner, texte et HTML, attributs, classes et styles, parcourir des listes, créer et ajouter, supprimer) et 40 exercices, presque tous en atelier avec aperçu de la page.
 - **Niveau 2 — JavaScript dans le navigateur** : 5 cours (le navigateur, relier JavaScript à HTML, la console, `window`, `document`) et 20 exercices, dont des **ateliers** : de vraies pages HTML + CSS + JS avec aperçu et console.
@@ -24,7 +25,7 @@ Ouvre simplement `index.html` dans ton navigateur (double-clic). Ta progression 
 - **Révision** : notions « à revoir », exercices difficiles, résumés, et **révision rapide** (5 à 10 questions qui s’adaptent à ton taux de réussite).
 - **Thème sombre**, bouton de **réinitialisation** (page Progression).
 
-Les niveaux 5 et 6 et le projet météo sont affichés comme « Bientôt » : ils font partie des prochaines versions.
+Le niveau 6 et le projet météo sont affichés comme « Bientôt » : ils font partie des prochaines versions.
 
 ## Organisation du code
 

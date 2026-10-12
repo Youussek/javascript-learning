@@ -83,6 +83,10 @@ function pageCapture(id, problems, tests, actions) {
         bubbles: action.type !== "mouseenter" && action.type !== "mouseleave",
         clientX: action.x || 0, clientY: action.y || 0, button: action.button || 0,
       }));
+    } else if (action.do === "focus") {
+      target.focus();
+    } else if (action.do === "event") {
+      target.dispatchEvent(new Event(action.type, { bubbles: action.bubbles === true }));
     } else if (action.do === "submit") {
       if (target.requestSubmit) target.requestSubmit();
       else target.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
@@ -90,7 +94,7 @@ function pageCapture(id, problems, tests, actions) {
   }
 
   // Une fois la page chargée : on joue les actions, puis on évalue les vérifications de l'exercice.
-  // Une vérification avec afterAction: k est évaluée juste après la k-ième action (en partant de 0).
+  // Une vérification avec afterAction: k est évaluée juste après la k-ième action (en partant de 0) ; afterAction: -1, avant toute action.
   window.addEventListener("load", function () {
     setTimeout(function () {
       var results = [];
@@ -98,6 +102,7 @@ function pageCapture(id, problems, tests, actions) {
         try { return { value: preciseValue((0, eval)(test.expr)) }; }
         catch (error) { return { error: String(error) }; }
       }
+      tests.forEach(function (test, position) { if (test.afterAction === -1) results[position] = check(test); });
       (actions || []).forEach(function (action, index) {
         try { perform(action); } catch (error) { send("error", { text: String(error) }); }
         tests.forEach(function (test, position) { if (test.afterAction === index) results[position] = check(test); });

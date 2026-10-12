@@ -182,6 +182,15 @@ const ELEMENT_MEMBERS = [
   { label: "matches", detail: "correspond au sélecteur ?", text: 'matches("$0")' },
   { label: "checked", detail: "case cochée ?", text: "checked" },
   { label: "reset", detail: "vider un formulaire", text: "reset()" },
+  { label: "hidden", detail: "caché ? (true / false)", text: "hidden" },
+  { label: "contains", detail: "contient cet élément ?", text: "contains($0)" },
+  { label: "focus", detail: "donner le focus", text: "focus()" },
+  { label: "previousElementSibling", detail: "frère précédent", text: "previousElementSibling" },
+  { label: "checkValidity", detail: "champ valide ?", text: "checkValidity()" },
+  { label: "validity", detail: "détails de validité", text: "validity" },
+  { label: "test", detail: "expression régulière : correspond ?", text: "test($0)" },
+  { label: "splice", detail: "retirer / insérer dans un tableau", text: "splice(${1:index}, ${2:1})" },
+  { label: "findIndex", detail: "position du premier élément qui passe le test", text: "findIndex(" + CALLBACK + ")" },
 ];
 const EVENT_MEMBERS = [
   { label: "key", detail: "la touche (clavier)", text: "key" },

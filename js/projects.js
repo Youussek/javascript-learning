@@ -919,7 +919,371 @@ formulaire.addEventListener("submit", (event) => {
 
   // ─────────────────────────────────────────────────────────────
   {
-    id: "meteo", title: "Application météo", difficulty: 3, available: false,
+    id: "site-interactif", title: "Mini-site interactif", difficulty: 3, available: true, previewHeight: 440,
+    unlock: { module: "n5", percent: 70 },
+    goal: "La page d’un petit studio web : un menu burger, une FAQ en accordéon, des offres en onglets, et une fenêtre de contact avec un formulaire validé. Tout le niveau 5 dans une seule page.",
+    skills: "état de l’interface, classList, aria-expanded, hidden, délégation, data-*, modale, validation de formulaire",
+    files: projectFiles(`<header>
+  <strong>Atelier Pixel</strong>
+  <button id="burger" aria-expanded="false">☰ Menu</button>
+</header>
+<nav id="menu">
+  <a href="#">Accueil</a>
+  <a href="#">Réalisations</a>
+</nav>
+<main>
+  <h2>Questions fréquentes</h2>
+  <div id="faq">
+    <button class="titre" aria-expanded="false">Combien de temps pour un site ?</button>
+    <div class="contenu" hidden>Comptez 3 à 6 semaines selon le projet.</div>
+    <button class="titre" aria-expanded="false">Travaillez-vous à distance ?</button>
+    <div class="contenu" hidden>Oui, partout en France.</div>
+    <button class="titre" aria-expanded="false">Proposez-vous la maintenance ?</button>
+    <div class="contenu" hidden>Oui, à partir de 30 € par mois.</div>
+  </div>
+
+  <h2>Nos offres</h2>
+  <div role="tablist">
+    <button class="onglet" role="tab" data-cible="p-essentiel">Essentiel</button>
+    <button class="onglet" role="tab" data-cible="p-pro">Pro</button>
+    <button class="onglet" role="tab" data-cible="p-mesure">Sur mesure</button>
+  </div>
+  <div class="panneau" id="p-essentiel" role="tabpanel" hidden>Un site d'une page, rapide à mettre en ligne.</div>
+  <div class="panneau" id="p-pro" role="tabpanel" hidden>Un site complet, avec blog et formulaire.</div>
+  <div class="panneau" id="p-mesure" role="tabpanel" hidden>Un projet unique, étudié avec vous.</div>
+
+  <p><button id="contact">Nous contacter</button></p>
+  <p id="merci"></p>
+</main>
+
+<div id="fond" hidden>
+  <div class="modale" role="dialog" aria-modal="true" aria-labelledby="titre-contact">
+    <h2 id="titre-contact">Nous contacter</h2>
+    <form id="contact-form" novalidate>
+      <label>Email <input id="email" type="text"></label>
+      <small class="erreur" id="erreur-email"></small>
+      <label>Message <textarea id="message" rows="3"></textarea></label>
+      <small class="erreur" id="erreur-message"></small>
+      <button type="submit">Envoyer</button>
+      <button type="button" id="fermer">Annuler</button>
+    </form>
+  </div>
+</div>`, `body { font-family: sans-serif; margin: 0; padding: 8px 14px; }
+header { display: flex; justify-content: space-between; align-items: center; }
+#menu { display: none; background: #eef; padding: 8px; }
+#menu.ouvert { display: block; }
+#menu a { display: block; padding: 4px 0; }
+h2 { font-size: 1.1rem; margin: 14px 0 6px; }
+.titre { display: block; width: 100%; text-align: left; padding: 8px; margin-top: 4px; cursor: pointer; font-weight: bold; }
+.titre[aria-expanded="true"] { background: gold; }
+.contenu { padding: 6px 10px; background: #f4f4ff; }
+.onglet { padding: 6px 12px; border: 1px solid #99c; background: #eef; cursor: pointer; }
+.onglet.actif { background: white; font-weight: bold; }
+.panneau { border: 1px solid #99c; padding: 10px; margin-top: -1px; }
+#fond { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; }
+#fond[hidden] { display: none; }
+.modale { background: white; padding: 14px 20px; border-radius: 10px; width: 260px; }
+.modale label { display: block; margin-top: 6px; }
+.modale input, .modale textarea { width: 100%; box-sizing: border-box; }
+.erreur { color: crimson; display: block; min-height: 1.1em; }
+#merci { color: seagreen; font-weight: bold; }`, `// Projet 7 : le mini-site interactif
+// Tout le HTML et le CSS sont prêts. Suis les étapes dans l'ordre, sous l'éditeur.
+`),
+    steps: [
+      {
+        title: "Le menu burger",
+        instruction: [
+          "Un clic sur `#burger` ouvre ou ferme le menu `#menu` : ajoute ou retire la classe `ouvert` sur le menu, et mets à jour `aria-expanded` sur le bouton (`\"true\"` ou `\"false\"`).",
+          "La touche Échap (écouteur sur `document`) doit aussi fermer le menu. Mets le code de fermeture dans une fonction `fermerMenu()`.",
+        ],
+        hints: [
+          "Deux fonctions `ouvrirMenu()` et `fermerMenu()` qui changent la classe ET l’attribut ensemble.",
+          "Dans l’écouteur du bouton : `if (menu.classList.contains(\"ouvert\")) { fermerMenu(); } else { ouvrirMenu(); }`.",
+          "Pour Échap : `document.addEventListener(\"keydown\", (event) => { if (event.key === \"Escape\") { fermerMenu(); } });`",
+        ],
+        actions: [
+          { do: "click", target: "#burger" },
+          { do: "key", target: "document", type: "keydown", key: "Escape" },
+          { do: "click", target: "#burger" },
+          { do: "click", target: "#burger" },
+        ],
+        tests: [
+          { expr: `document.getElementById("menu").classList.contains("ouvert")`, expect: true, afterAction: 0, label: "Après un clic, le menu doit être ouvert" },
+          { expr: `document.getElementById("burger").getAttribute("aria-expanded")`, expect: "true", afterAction: 0, label: "Après un clic, `aria-expanded` doit valoir \"true\"" },
+          { expr: `document.getElementById("menu").classList.contains("ouvert")`, expect: false, afterAction: 1, label: "Échap doit fermer le menu" },
+          { expr: `document.getElementById("menu").classList.contains("ouvert")`, expect: false, label: "Ouvrir puis refermer avec le bouton : le menu doit être fermé" },
+          { expr: `document.getElementById("burger").getAttribute("aria-expanded")`, expect: "false", label: "Menu fermé : `aria-expanded` doit valoir \"false\"" },
+        ],
+      },
+      {
+        title: "La FAQ en accordéon",
+        instruction: [
+          "Un clic sur une question (`.titre`) déplie sa réponse (le `.contenu` qui suit, propriété `hidden`) et met `aria-expanded` à jour. Une seule réponse doit être ouverte à la fois, et recliquer sur la question ouverte la referme.",
+          "Utilise un seul écouteur sur `#faq`.",
+        ],
+        hints: [
+          "Écoute `click` sur `#faq` et retrouve le titre avec `event.target.closest(\".titre\")`.",
+          "Mémorise d’abord si la section était ouverte (`aria-expanded`), puis referme tout avec `querySelectorAll`.",
+          "Si elle n’était pas ouverte : ouvre-la (`titre.nextElementSibling.hidden = false;` et `aria-expanded` à `\"true\"`).",
+        ],
+        actions: [
+          { do: "click", target: "#faq .titre:nth-of-type(1)" },
+          { do: "click", target: "#faq .titre:nth-of-type(2)" },
+        ],
+        tests: [
+          { expr: `Array.from(document.querySelectorAll("#faq .contenu")).map((c) => c.hidden)`, expect: [false, true, true], afterAction: 0, label: "Après le 1er clic : seule la réponse 1 est visible" },
+          { expr: `Array.from(document.querySelectorAll("#faq .contenu")).map((c) => c.hidden)`, expect: [true, false, true], label: "Après le 2e clic : seule la réponse 2 est visible" },
+          { expr: `Array.from(document.querySelectorAll("#faq .titre")).map((t) => t.getAttribute("aria-expanded"))`, expect: ["false", "true", "false"], label: "`aria-expanded` doit suivre : false, true, false" },
+        ],
+      },
+      {
+        title: "Les offres en onglets",
+        instruction: [
+          "Un clic sur un onglet l’active (classe `actif`, et retire-la aux autres) et n’affiche que son panneau (celui dont l’id est dans `data-cible`).",
+          "Au chargement, le premier onglet doit déjà être actif.",
+        ],
+        hints: [
+          "Une fonction `activer(onglet)` qui parcourt tous les onglets puis tous les panneaux.",
+          "`o.classList.toggle(\"actif\", o === onglet);` et `p.hidden = p.id !== onglet.dataset.cible;`",
+          "N’oublie pas `activer(onglets[0]);` à la fin, et les écouteurs sur chaque onglet.",
+        ],
+        actions: [{ do: "click", target: ".onglet:nth-of-type(3)" }],
+        tests: [
+          { expr: `Array.from(document.querySelectorAll(".panneau")).map((p) => p.hidden)`, expect: [true, true, false], label: "Après un clic sur le 3ᵉ onglet : seul le panneau 3 est visible" },
+          { expr: `Array.from(document.querySelectorAll(".onglet")).map((o) => o.classList.contains("actif"))`, expect: [false, false, true], label: "Seul le 3ᵉ onglet doit avoir la classe `actif`" },
+          { expr: `Array.from(document.querySelectorAll(".panneau")).map((p) => p.hidden)`, expect: [false, true, true], afterAction: -1, label: "Au chargement, seul le panneau 1 est visible" },
+        ],
+      },
+      {
+        title: "La fenêtre de contact",
+        instruction: [
+          "Un clic sur `#contact` ouvre la modale `#fond` (propriété `hidden`) et donne le focus au champ `#email`. On la ferme avec le bouton `#fermer`, avec la touche Échap, ou par un clic sur le fond sombre, mais pas par un clic dans la fenêtre blanche.",
+          "Rends le focus à `#contact` à la fermeture. Pour Échap, tu peux compléter l’écouteur de l’étape 1.",
+        ],
+        hints: [
+          "Deux fonctions : `ouvrirModale()` et `fermerModale()`, appelées par `#contact` et `#fermer`.",
+          "Pour le fond : `fond.addEventListener(\"click\", (event) => { if (event.target === fond) { fermerModale(); } });`",
+          "Pour Échap : dans l’écouteur `keydown`, ajoute `if (!fond.hidden) { fermerModale(); }`.",
+        ],
+        actions: [
+          { do: "click", target: "#contact" },
+          { do: "click", target: ".modale" },
+          { do: "click", target: "#fond" },
+          { do: "click", target: "#contact" },
+          { do: "key", target: "document", type: "keydown", key: "Escape" },
+          { do: "click", target: "#contact" },
+          { do: "click", target: "#fermer" },
+        ],
+        tests: [
+          { expr: `document.getElementById("fond").hidden`, expect: false, afterAction: 0, label: "Après un clic sur « Nous contacter », la modale est ouverte" },
+          { expr: `document.activeElement.id`, expect: "email", afterAction: 0, label: "Le focus doit être dans le champ « Email »" },
+          { expr: `document.getElementById("fond").hidden`, expect: false, afterAction: 1, label: "Un clic dans la fenêtre ne doit pas la fermer" },
+          { expr: `document.getElementById("fond").hidden`, expect: true, afterAction: 2, label: "Un clic sur le fond doit la fermer" },
+          { expr: `document.getElementById("fond").hidden`, expect: true, afterAction: 4, label: "Échap doit la fermer" },
+          { expr: `document.getElementById("fond").hidden`, expect: true, label: "Le bouton « Annuler » doit la fermer" },
+        ],
+      },
+      {
+        title: "Valider le formulaire de contact",
+        instruction: [
+          "À l’envoi du formulaire `#contact-form`, empêche le rechargement et vérifie les champs :",
+          { list: [
+            "l’email (sans espaces autour) doit ressembler à `x@y.z` : sinon écris « Email invalide » dans `#erreur-email` ;",
+            "le message ne doit pas être vide : sinon écris « Message obligatoire » dans `#erreur-message`.",
+          ] },
+          "Quand un champ est correct, vide son message d’erreur. La modale reste ouverte tant qu’il y a une erreur.",
+        ],
+        hints: [
+          "Écoute `submit` sur le formulaire, avec `event.preventDefault()` en première ligne.",
+          "Écris une fonction `emailValide(texte)` avec `/^\\S+@\\S+\\.\\S+$/.test(texte)`.",
+          "Pour chaque champ : `if` (invalide) → message + `valide = false`, `else` → message vidé.",
+        ],
+        actions: [
+          { do: "click", target: "#contact" },
+          { do: "submit", target: "#contact-form" },
+          { do: "input", target: "#email", value: "a@b.fr" },
+          { do: "input", target: "#message", value: "Bonjour" },
+          { do: "submit", target: "#contact-form" },
+        ],
+        tests: [
+          { expr: `document.getElementById("erreur-email").textContent`, expect: "Email invalide", afterAction: 1, label: "Formulaire vide : « Email invalide » doit s’afficher" },
+          { expr: `document.getElementById("erreur-message").textContent`, expect: "Message obligatoire", afterAction: 1, label: "Formulaire vide : « Message obligatoire » doit s’afficher" },
+          { expr: `document.getElementById("fond").hidden`, expect: false, afterAction: 1, label: "Avec des erreurs, la modale doit rester ouverte" },
+          { expr: `document.getElementById("erreur-email").textContent`, expect: "", label: "Email correct : le message d’erreur doit disparaître" },
+          { expr: `document.getElementById("erreur-message").textContent`, expect: "", label: "Message rempli : le message d’erreur doit disparaître" },
+        ],
+        forbidLogs: [{ level: "warn", text: "formulaire a été envoyé", label: "Le formulaire est encore envoyé : appelle `event.preventDefault()`." }],
+      },
+      {
+        title: "Confirmer l’envoi",
+        instruction: [
+          "Si, et seulement si, tout est valide : ferme la modale, vide le formulaire (`reset()`) et écris « Merci ! Nous vous répondrons très vite. » dans `#merci`.",
+        ],
+        hints: [
+          "Utilise une variable `valide`, mise à `true` au départ et à `false` dès qu’une vérification échoue.",
+          "À la fin du gestionnaire : `if (valide) { ... }`.",
+          "Dans le `if` : `fermerModale();`, `formulaire.reset();` puis `merci.textContent = \"Merci ! Nous vous répondrons très vite.\";`",
+        ],
+        actions: [
+          { do: "click", target: "#contact" },
+          { do: "submit", target: "#contact-form" },
+          { do: "input", target: "#email", value: "a@b.fr" },
+          { do: "input", target: "#message", value: "Bonjour" },
+          { do: "submit", target: "#contact-form" },
+        ],
+        tests: [
+          { expr: `document.getElementById("merci").textContent`, expect: "", afterAction: 1, label: "Avec des erreurs, aucun message de remerciement" },
+          { expr: `document.getElementById("merci").textContent`, expect: "Merci ! Nous vous répondrons très vite.", label: "Tout est valide : le remerciement doit s’afficher" },
+          { expr: `document.getElementById("fond").hidden`, expect: true, label: "Après l’envoi, la modale doit être fermée" },
+          { expr: `document.getElementById("email").value`, expect: "", label: "Le formulaire doit être vidé" },
+        ],
+      },
+    ],
+    solution: [{ name: "script.js", code: `// ── 1. Le menu ──
+const burger = document.getElementById("burger");
+const menu = document.getElementById("menu");
+
+function ouvrirMenu() {
+  menu.classList.add("ouvert");
+  burger.setAttribute("aria-expanded", "true");
+}
+
+function fermerMenu() {
+  menu.classList.remove("ouvert");
+  burger.setAttribute("aria-expanded", "false");
+}
+
+burger.addEventListener("click", () => {
+  if (menu.classList.contains("ouvert")) {
+    fermerMenu();
+  } else {
+    ouvrirMenu();
+  }
+});
+
+// ── 2. La FAQ ──
+const faq = document.getElementById("faq");
+
+faq.addEventListener("click", (event) => {
+  const titre = event.target.closest(".titre");
+  if (titre === null) {
+    return;
+  }
+  const etaitOuvert = titre.getAttribute("aria-expanded") === "true";
+
+  faq.querySelectorAll(".titre").forEach((t) => {
+    t.setAttribute("aria-expanded", "false");
+  });
+  faq.querySelectorAll(".contenu").forEach((c) => {
+    c.hidden = true;
+  });
+
+  if (!etaitOuvert) {
+    titre.setAttribute("aria-expanded", "true");
+    titre.nextElementSibling.hidden = false;
+  }
+});
+
+// ── 3. Les onglets ──
+const onglets = document.querySelectorAll(".onglet");
+const panneaux = document.querySelectorAll(".panneau");
+
+function activer(onglet) {
+  onglets.forEach((o) => {
+    o.classList.toggle("actif", o === onglet);
+  });
+  panneaux.forEach((p) => {
+    p.hidden = p.id !== onglet.dataset.cible;
+  });
+}
+
+onglets.forEach((onglet) => {
+  onglet.addEventListener("click", () => {
+    activer(onglet);
+  });
+});
+activer(onglets[0]);
+
+// ── 4. La fenêtre de contact ──
+const contact = document.getElementById("contact");
+const fond = document.getElementById("fond");
+const fermer = document.getElementById("fermer");
+const formulaire = document.getElementById("contact-form");
+const email = document.getElementById("email");
+const message = document.getElementById("message");
+const erreurEmail = document.getElementById("erreur-email");
+const erreurMessage = document.getElementById("erreur-message");
+const merci = document.getElementById("merci");
+
+function ouvrirModale() {
+  fond.hidden = false;
+  email.focus();
+}
+
+function fermerModale() {
+  fond.hidden = true;
+  contact.focus();
+}
+
+contact.addEventListener("click", ouvrirModale);
+fermer.addEventListener("click", fermerModale);
+
+fond.addEventListener("click", (event) => {
+  if (event.target === fond) {
+    fermerModale();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    fermerMenu();
+    if (!fond.hidden) {
+      fermerModale();
+    }
+  }
+});
+
+// ── 5 et 6. Le formulaire ──
+function emailValide(texte) {
+  return /^\\S+@\\S+\\.\\S+$/.test(texte);
+}
+
+formulaire.addEventListener("submit", (event) => {
+  event.preventDefault();
+  let valide = true;
+
+  if (!emailValide(email.value.trim())) {
+    erreurEmail.textContent = "Email invalide";
+    valide = false;
+  } else {
+    erreurEmail.textContent = "";
+  }
+
+  if (message.value.trim() === "") {
+    erreurMessage.textContent = "Message obligatoire";
+    valide = false;
+  } else {
+    erreurMessage.textContent = "";
+  }
+
+  if (valide) {
+    fermerModale();
+    formulaire.reset();
+    merci.textContent = "Merci ! Nous vous répondrons très vite.";
+  }
+});` }],
+    explanation: [
+      "Chaque composant suit le même schéma : un état (une classe, `hidden`, `aria-expanded`), un événement qui le change, et une mise à jour de l’affichage. Une fois ce schéma compris, un menu, un accordéon, des onglets ou une modale ne sont plus que des variations.",
+      "Le menu et la modale ont chacun une fonction de fermeture. L’écouteur Échap unique les appelle toutes les deux : plusieurs composants peuvent partager un même événement.",
+      "L’accordéon et les onglets utilisent la délégation et `closest` / `dataset` pour savoir quel élément a été touché, sans écouteur par élément.",
+      "La validation sépare le test (`emailValide`) de l’affichage des messages ; la variable `valide` accumule le résultat et décide de la suite (`fermerModale`, `reset`, remerciement).",
+      "Pour aller plus loin : mémoriser l’onglet actif avec `localStorage`, piéger le focus dans la modale avec la touche Tab, ou envoyer le formulaire à un serveur (niveau 6).",
+    ],
+  },
+
+  // ─────────────────────────────────────────────────────────────
+  {
+    id: "meteo", title: "Application météo", difficulty: 3, available: false, unlock: { module: "n6", percent: 70 },
     goal: "Récupérer des données depuis une API avec fetch et les afficher.",
     needs: "Niveau 6 (JavaScript asynchrone : Promises, async/await, fetch, JSON)",
     steps: [],
