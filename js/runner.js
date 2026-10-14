@@ -11,6 +11,7 @@
 function showValue(value) {
   if (typeof value === "string") return value;
   if (typeof value === "function") return String(value);
+  if (typeof Promise !== "undefined" && value instanceof Promise) return "Promise { … }";
   if (value === undefined) return "undefined";
   if (typeof value === "number" && !Number.isFinite(value)) return String(value);
   try {

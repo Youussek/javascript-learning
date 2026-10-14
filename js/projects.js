@@ -1283,10 +1283,232 @@ formulaire.addEventListener("submit", (event) => {
 
   // ─────────────────────────────────────────────────────────────
   {
-    id: "meteo", title: "Application météo", difficulty: 3, available: false, unlock: { module: "n6", percent: 70 },
-    goal: "Récupérer des données depuis une API avec fetch et les afficher.",
-    needs: "Niveau 6 (JavaScript asynchrone : Promises, async/await, fetch, JSON)",
-    steps: [],
+    id: "meteo", title: "Application météo", difficulty: 3, available: true, previewHeight: 460,
+    unlock: { module: "n6", percent: 70 },
+    goal: "Une application météo : on saisit une ville, la page interroge une API, affiche la température, le ciel et le vent, gère le chargement et les erreurs, et garde l’historique des dernières recherches.",
+    skills: "fetch, async / await, JSON, try / catch / finally, états de chargement, encodeURIComponent, délégation d’événements",
+    files: projectFiles(`<h1>Météo</h1>
+<form id="formulaire">
+  <input id="ville-saisie" type="text" placeholder="Paris, Lyon, Marseille, Lille…">
+  <button id="chercher" type="submit">Chercher</button>
+</form>
+<p id="statut"></p>
+<section id="resultat">
+  <h2 id="ville"></h2>
+  <p id="temperature"></p>
+  <p id="ciel"></p>
+  <p id="vent"></p>
+</section>
+<h3>Recherches récentes</h3>
+<ul id="historique"></ul>`, `body { font-family: sans-serif; padding: 8px 14px; }
+input { padding: 6px; }
+#statut { color: #b45309; min-height: 1.3em; }
+#ville { margin-bottom: 4px; }
+#temperature { font-size: 2rem; margin: 0; }
+#ciel, #vent { margin: 2px 0; color: #555; }
+#historique { list-style: none; padding: 0; }
+#historique li { display: inline-block; margin: 2px 6px 2px 0; padding: 3px 10px; background: #eef; border-radius: 12px; cursor: pointer; }`, `// Projet 8 : l'application météo
+// L'API simulée connaît Paris, Lyon, Marseille et Lille.
+// Pour tester une panne réseau, cherche la ville « Panne ».
+const API = "https://api.cahierjs.test";
+`),
+    steps: [
+      {
+        title: "Interroger l’API",
+        instruction: [
+          "Quand le formulaire est envoyé, empêche le rechargement, puis récupère la météo de la ville saisie : `GET /meteo?ville=...` (adresse de base `API`). Utilise `encodeURIComponent` pour la ville.",
+          "La réponse est du JSON de la forme `{ ville, temperature, ciel, vent }`. Affiche la ville dans `#ville` et la température dans `#temperature`, au format « 18 °C ».",
+          "Mets l’appel dans une fonction `async` `chercherMeteo(nom)`.",
+        ],
+        hints: [
+          "Écoute `submit` sur le formulaire avec `event.preventDefault()`, puis appelle `chercherMeteo(champ.value.trim())`.",
+          "`const reponse = await fetch(API + \"/meteo?ville=\" + encodeURIComponent(nom));` puis `const donnees = await reponse.json();`",
+          "`ville.textContent = donnees.ville;` et `temperature.textContent = donnees.temperature + \" °C\";`",
+        ],
+        actions: [{ do: "input", target: "#ville-saisie", value: "Marseille" }, { do: "submit", target: "#formulaire" }, { do: "wait", ms: 700 }],
+        tests: [
+          { expr: `document.getElementById("ville").textContent`, expect: "Marseille", label: "`#ville` doit afficher « Marseille »" },
+          { expr: `document.getElementById("temperature").textContent`, expect: "24 °C", label: "`#temperature` doit afficher « 24 °C »" },
+        ],
+        forbidLogs: [{ level: "warn", text: "formulaire a été envoyé", label: "Le formulaire est encore envoyé : appelle `event.preventDefault()`." }],
+      },
+      {
+        title: "Le ciel et le vent",
+        instruction: ["Affiche aussi le ciel dans `#ciel` (par exemple « pluie ») et le vent dans `#vent`, au format « Vent : 20 km/h »."],
+        hints: [
+          "Les données sont dans `donnees.ciel` et `donnees.vent`.",
+          "`ciel.textContent = donnees.ciel;`",
+          "`vent.textContent = \"Vent : \" + donnees.vent + \" km/h\";`",
+        ],
+        actions: [{ do: "input", target: "#ville-saisie", value: "Lyon" }, { do: "submit", target: "#formulaire" }, { do: "wait", ms: 700 }],
+        tests: [
+          { expr: `document.getElementById("ciel").textContent`, expect: "pluie", label: "`#ciel` doit afficher « pluie » pour Lyon" },
+          { expr: `document.getElementById("vent").textContent`, expect: "Vent : 20 km/h", label: "`#vent` doit afficher « Vent : 20 km/h »" },
+        ],
+      },
+      {
+        title: "L’état de chargement",
+        instruction: [
+          "Pendant l’appel, `#statut` affiche « Chargement… » et le bouton `#chercher` est désactivé. Quand la réponse est arrivée, `#statut` est vidé et le bouton réactivé.",
+          "Réactive le bouton dans un bloc `finally`, pour que cela marche aussi en cas d’erreur.",
+        ],
+        hints: [
+          "Avant le `fetch` : `statut.textContent = \"Chargement…\";` et `bouton.disabled = true;`.",
+          "Entoure le `fetch` d’un `try { ... } finally { ... }`.",
+          "Dans le `finally` : `bouton.disabled = false;`. À la fin du `try`, vide le statut : `statut.textContent = \"\";`.",
+        ],
+        actions: [{ do: "input", target: "#ville-saisie", value: "Lille" }, { do: "submit", target: "#formulaire" }, { do: "wait", ms: 60 }, { do: "wait", ms: 700 }],
+        tests: [
+          { expr: `document.getElementById("statut").textContent`, expect: "Chargement…", afterAction: 2, label: "Pendant l’appel, `#statut` doit afficher « Chargement… »" },
+          { expr: `document.getElementById("chercher").disabled`, expect: true, afterAction: 2, label: "Pendant l’appel, le bouton doit être désactivé" },
+          { expr: `document.getElementById("statut").textContent`, expect: "", label: "Après l’appel, `#statut` doit être vide" },
+          { expr: `document.getElementById("chercher").disabled`, expect: false, label: "Après l’appel, le bouton doit être réactivé" },
+        ],
+      },
+      {
+        title: "Gérer les erreurs",
+        instruction: [
+          "Trois cas à traiter, avec un message clair dans `#statut` (jamais le message technique) :",
+          { list: [
+            "champ vide (après `trim()`) : « Écris le nom d’une ville. » (sans appeler l’API) ;",
+            "ville inconnue (l’API répond 404) : « Ville introuvable. » ;",
+            "panne réseau (le `fetch` échoue : cherche la ville « Panne ») : « Impossible de contacter le service. »",
+          ] },
+          "Quand une recherche échoue, efface le résultat précédent (`#ville`, `#temperature`, `#ciel`, `#vent`).",
+        ],
+        hints: [
+          "Champ vide : au début de `chercherMeteo`, `if (nom === \"\") { ...; return; }`.",
+          "Après le `fetch` : `if (reponse.status === 404) { statut.textContent = \"Ville introuvable.\"; return; }` (le `finally` s’exécute quand même).",
+          "Panne réseau : le `fetch` rejette, donc un `catch` attrape l’erreur. Efface le résultat avant chaque recherche.",
+        ],
+        actions: [
+          { do: "input", target: "#ville-saisie", value: "  " }, { do: "submit", target: "#formulaire" },
+          { do: "input", target: "#ville-saisie", value: "Paris" }, { do: "submit", target: "#formulaire" }, { do: "wait", ms: 700 },
+          { do: "input", target: "#ville-saisie", value: "Atlantide" }, { do: "submit", target: "#formulaire" }, { do: "wait", ms: 700 },
+          { do: "input", target: "#ville-saisie", value: "Panne" }, { do: "submit", target: "#formulaire" }, { do: "wait", ms: 700 },
+        ],
+        tests: [
+          { expr: `document.getElementById("statut").textContent`, expect: "Écris le nom d’une ville.", afterAction: 1, label: "Champ vide : « Écris le nom d’une ville. »" },
+          { expr: `document.getElementById("statut").textContent`, expect: "Ville introuvable.", afterAction: 7, label: "Ville inconnue : « Ville introuvable. »" },
+          { expr: `document.getElementById("ville").textContent`, expect: "", afterAction: 7, label: "Après une erreur, le résultat précédent doit être effacé" },
+          { expr: `document.getElementById("statut").textContent`, expect: "Impossible de contacter le service.", label: "Panne réseau : « Impossible de contacter le service. »" },
+          { expr: `document.getElementById("chercher").disabled`, expect: false, label: "Après une erreur, le bouton doit être réactivé" },
+        ],
+      },
+      {
+        title: "L’historique des recherches",
+        instruction: [
+          "Garde dans un tableau les 3 dernières villes recherchées avec succès (la plus récente en premier, sans doublon : une ville déjà présente remonte en tête). Affiche-les dans `#historique`, un `<li>` par ville.",
+          "Un clic sur une ville de l’historique relance la recherche (délégation sur `#historique`) et remplit le champ.",
+        ],
+        hints: [
+          "Un tableau `recherches` et une fonction `afficherHistorique()` qui reconstruit la liste (niveau 5 : données → affichage).",
+          "Pour mémoriser : `recherches = recherches.filter((r) => r !== nom);` puis `recherches.unshift(nom);` puis `recherches = recherches.slice(0, 3);`.",
+          "Appelle `memoriser(donnees.ville)` seulement quand la recherche a réussi. Un écouteur sur `#historique` relance `chercherMeteo`.",
+        ],
+        actions: [
+          { do: "input", target: "#ville-saisie", value: "Paris" }, { do: "submit", target: "#formulaire" }, { do: "wait", ms: 600 },
+          { do: "input", target: "#ville-saisie", value: "Lyon" }, { do: "submit", target: "#formulaire" }, { do: "wait", ms: 600 },
+          { do: "input", target: "#ville-saisie", value: "Marseille" }, { do: "submit", target: "#formulaire" }, { do: "wait", ms: 600 },
+          { do: "input", target: "#ville-saisie", value: "Lille" }, { do: "submit", target: "#formulaire" }, { do: "wait", ms: 600 },
+          { do: "click", target: "#historique li:nth-child(3)" }, { do: "wait", ms: 600 },
+        ],
+        tests: [
+          { expr: `Array.from(document.querySelectorAll("#historique li")).map((li) => li.textContent)`, expect: ["Lille", "Marseille", "Lyon"], afterAction: 11, label: "Après 4 recherches : Lille, Marseille, Lyon (3 dernières, la plus récente en premier)" },
+          { expr: `document.getElementById("ville").textContent`, expect: "Lyon", label: "Un clic sur « Lyon » dans l’historique doit relancer la recherche" },
+          { expr: `Array.from(document.querySelectorAll("#historique li")).map((li) => li.textContent)`, expect: ["Lyon", "Lille", "Marseille"], label: "Une ville recherchée de nouveau remonte en tête, sans doublon" },
+        ],
+      },
+    ],
+    solution: [{ name: "script.js", code: `const API = "https://api.cahierjs.test";
+
+const formulaire = document.getElementById("formulaire");
+const champ = document.getElementById("ville-saisie");
+const bouton = document.getElementById("chercher");
+const statut = document.getElementById("statut");
+const ville = document.getElementById("ville");
+const temperature = document.getElementById("temperature");
+const ciel = document.getElementById("ciel");
+const vent = document.getElementById("vent");
+const historique = document.getElementById("historique");
+
+let recherches = [];
+
+function afficherHistorique() {
+  historique.replaceChildren();
+  recherches.forEach((nom) => {
+    const li = document.createElement("li");
+    li.textContent = nom;
+    historique.append(li);
+  });
+}
+
+function memoriser(nom) {
+  recherches = recherches.filter((r) => r !== nom);
+  recherches.unshift(nom);
+  recherches = recherches.slice(0, 3);
+  afficherHistorique();
+}
+
+function effacerResultat() {
+  ville.textContent = "";
+  temperature.textContent = "";
+  ciel.textContent = "";
+  vent.textContent = "";
+}
+
+async function chercherMeteo(nom) {
+  if (nom === "") {
+    statut.textContent = "Écris le nom d’une ville.";
+    return;
+  }
+
+  statut.textContent = "Chargement…";
+  bouton.disabled = true;
+  effacerResultat();
+
+  try {
+    const reponse = await fetch(API + "/meteo?ville=" + encodeURIComponent(nom));
+    if (reponse.status === 404) {
+      statut.textContent = "Ville introuvable.";
+      return;
+    }
+    if (!reponse.ok) {
+      throw new Error("Erreur " + reponse.status);
+    }
+    const donnees = await reponse.json();
+    ville.textContent = donnees.ville;
+    temperature.textContent = donnees.temperature + " °C";
+    ciel.textContent = donnees.ciel;
+    vent.textContent = "Vent : " + donnees.vent + " km/h";
+    statut.textContent = "";
+    memoriser(donnees.ville);
+  } catch (erreur) {
+    statut.textContent = "Impossible de contacter le service.";
+  } finally {
+    bouton.disabled = false;
+  }
+}
+
+formulaire.addEventListener("submit", (event) => {
+  event.preventDefault();
+  chercherMeteo(champ.value.trim());
+});
+
+historique.addEventListener("click", (event) => {
+  if (event.target.matches("li")) {
+    champ.value = event.target.textContent;
+    chercherMeteo(event.target.textContent);
+  }
+});` }],
+    explanation: [
+      "L’appel est isolé dans `chercherMeteo(nom)`, une fonction `async` : le formulaire et l’historique l’appellent tous les deux, sans dupliquer le code.",
+      "Le schéma chargement / succès / erreur est celui de la leçon : « Chargement… » et bouton désactivé avant l’appel ; le `finally` réactive le bouton quoi qu’il arrive ; le `catch` n’affiche qu’un message clair, sans détail technique.",
+      "On distingue deux sortes d’échec : une réponse 404 (`reponse.status`) est un cas normal du serveur (« ville introuvable ») ; un `fetch` qui échoue (panne) arrive dans le `catch`. Le `return` à l’intérieur du `try` n’empêche pas le `finally` de s’exécuter.",
+      "`encodeURIComponent` protège l’adresse contre les caractères spéciaux saisis par la personne.",
+      "L’historique est un tableau (la source de vérité), redessiné par `afficherHistorique()` : même schéma « données → affichage » qu’au niveau 5. `filter` retire les doublons, `unshift` ajoute en tête, `slice(0, 3)` garde trois éléments.",
+      "Pour aller plus loin avec une vraie API : consulte la documentation d’un service météo public (par exemple Open-Meteo), vérifie qu’il autorise les appels depuis un navigateur (CORS), et teste dans tes propres fichiers. Pense aussi à sauvegarder l’historique avec `localStorage` et `JSON.stringify`.",
+    ],
   },
 ];
 

@@ -42,6 +42,77 @@ function pageCapture(id, problems, tests, actions) {
     send("error", { text: text });
   });
   problems.forEach(function (text) { send("error", { text: text }); });
+  // ─── Une « API » simulée : l'atelier n'a pas accès à Internet ───
+  // fetch() est remplacé par une version qui répond comme un petit serveur, après un court délai.
+  // Adresse de base : https://api.cahierjs.test
+  var API_HOTE = "api.cahierjs.test";
+  var VILLES = {
+    paris: { ville: "Paris", temperature: 18, ciel: "nuageux", vent: 12 },
+    lyon: { ville: "Lyon", temperature: 15, ciel: "pluie", vent: 20 },
+    marseille: { ville: "Marseille", temperature: 24, ciel: "ensoleillé", vent: 30 },
+    lille: { ville: "Lille", temperature: 11, ciel: "brouillard", vent: 8 }
+  };
+  var UTILISATEURS = [
+    { id: 1, nom: "Léa", ville: "Paris" },
+    { id: 2, nom: "Sam", ville: "Lyon" },
+    { id: 3, nom: "Inès", ville: "Lille" }
+  ];
+  function reponseJson(donnees, statut) {
+    return new Response(JSON.stringify(donnees), { status: statut || 200, headers: { "Content-Type": "application/json" } });
+  }
+  window.fetch = function (adresse, options) {
+    return new Promise(function (resolve, reject) {
+      var url;
+      try { url = new URL(String(adresse), "https://" + API_HOTE + "/"); }
+      catch (erreur) { reject(new TypeError("Failed to fetch")); return; }
+      var methode = String((options && options.method) || "GET").toUpperCase();
+      var delai = url.pathname === "/lent" ? 1200 : 250;
+      setTimeout(function () {
+        if (url.hostname !== API_HOTE) { reject(new TypeError("Failed to fetch")); return; }
+        var chemin = url.pathname;
+        var morceaux = chemin.split("/").filter(Boolean);
+        if (methode === "GET" && chemin === "/utilisateurs") { resolve(reponseJson(UTILISATEURS)); return; }
+        if (methode === "GET" && morceaux[0] === "utilisateurs" && morceaux.length === 2) {
+          var trouve = UTILISATEURS.filter(function (u) { return String(u.id) === morceaux[1]; })[0];
+          resolve(trouve ? reponseJson(trouve) : reponseJson({ erreur: "Utilisateur introuvable" }, 404));
+          return;
+        }
+        if (methode === "GET" && chemin === "/meteo") {
+          var ville = url.searchParams.get("ville");
+          if (!ville) { resolve(reponseJson({ erreur: "Paramètre ville manquant" }, 400)); return; }
+          var cle = ville.trim().toLowerCase();
+          if (cle === "panne") { reject(new TypeError("Failed to fetch")); return; }
+          resolve(VILLES[cle] ? reponseJson(VILLES[cle]) : reponseJson({ erreur: "Ville inconnue" }, 404));
+          return;
+        }
+        if (methode === "GET" && chemin === "/lent") { resolve(reponseJson({ message: "Enfin !" })); return; }
+        if (methode === "GET" && chemin === "/erreur") { resolve(reponseJson({ erreur: "Erreur serveur" }, 500)); return; }
+        if (methode === "GET" && chemin === "/texte") {
+          resolve(new Response("Bonjour depuis le serveur", { status: 200, headers: { "Content-Type": "text/plain" } }));
+          return;
+        }
+        if (methode === "GET" && chemin === "/invalide") {
+          resolve(new Response("ceci n'est pas du JSON", { status: 200, headers: { "Content-Type": "application/json" } }));
+          return;
+        }
+        if (methode === "POST" && chemin === "/messages") {
+          var corps;
+          try { corps = JSON.parse(options.body); }
+          catch (erreur) { resolve(reponseJson({ erreur: "Corps JSON invalide" }, 400)); return; }
+          corps.id = 42;
+          resolve(reponseJson(corps, 201));
+          return;
+        }
+        resolve(reponseJson({ erreur: "Route inconnue" }, 404));
+      }, delai);
+    });
+  };
+  // Une promesse rejetée que personne n'attrape est une erreur à signaler.
+  window.addEventListener("unhandledrejection", function (event) {
+    var raison = event.reason;
+    send("error", { text: "Promesse rejetée non gérée : " + (raison && raison.message ? raison.message : String(raison)) });
+  });
+
   // Garde-fous : un formulaire envoyé ou un lien suivi sans preventDefault() changerait de page.
   // Dans l'aperçu, on l'empêche et on prévient. On écoute sur window : ce code passe en dernier.
   window.addEventListener("submit", function (event) {
@@ -59,7 +130,8 @@ function pageCapture(id, problems, tests, actions) {
     event.preventDefault();
   });
 
-  // Les actions de l'exercice simulent une personne qui utilise la page.
+  // Les actions de l'exercice simulent une personne qui utilise la page. L'action { do: "wait", ms } laisse passer du temps
+  // (pour les minuteurs et les requêtes).
   function find(selector) {
     if (selector === "document") return document;
     if (selector === "window") return window;
@@ -68,6 +140,7 @@ function pageCapture(id, problems, tests, actions) {
     return element;
   }
   function perform(action) {
+    if (action.do === "wait") return new Promise(function (resolve) { setTimeout(resolve, action.ms || 100); });
     var target = find(action.target);
     if (action.do === "click") {
       for (var i = 0; i < (action.times || 1); i++) target.click();
@@ -96,17 +169,17 @@ function pageCapture(id, problems, tests, actions) {
   // Une fois la page chargée : on joue les actions, puis on évalue les vérifications de l'exercice.
   // Une vérification avec afterAction: k est évaluée juste après la k-ième action (en partant de 0) ; afterAction: -1, avant toute action.
   window.addEventListener("load", function () {
-    setTimeout(function () {
+    setTimeout(async function () {
       var results = [];
       function check(test) {
         try { return { value: preciseValue((0, eval)(test.expr)) }; }
         catch (error) { return { error: String(error) }; }
       }
       tests.forEach(function (test, position) { if (test.afterAction === -1) results[position] = check(test); });
-      (actions || []).forEach(function (action, index) {
-        try { perform(action); } catch (error) { send("error", { text: String(error) }); }
+      for (var index = 0; index < (actions || []).length; index++) {
+        try { await perform(actions[index]); } catch (error) { send("error", { text: String(error) }); }
         tests.forEach(function (test, position) { if (test.afterAction === index) results[position] = check(test); });
-      });
+      }
       tests.forEach(function (test, position) { if (test.afterAction === undefined) results[position] = check(test); });
       send("results", results);
     }, 30);
@@ -276,6 +349,7 @@ function runPage(iframe, files, tests, timeoutMs, extra) {
   if (iframe.stopListening) iframe.stopListening();
   const id = Math.random().toString(36).slice(2);
   const page = buildPage(files, tests, id, options.actions);
+  const waits = (options.actions || []).reduce((total, action) => total + (action.do === "wait" ? action.ms || 100 : 0), 0);
   return new Promise((resolve) => {
     const logs = [];
     let firstError = null;

@@ -78,6 +78,10 @@ function editorTips() {
 // ─── Traduire les messages d’erreur en conseils ───
 function explainError(message) {
   if (/Cannot (read|set) properties of (null|undefined)/.test(message)) return "Tu utilises quelque chose qui n’existe pas (`null` ou `undefined`). Si c’est un élément de la page : id ou sélecteur incorrect, ou script exécuté avant que la page soit construite (place-le en bas du `<body>` ou ajoute `defer`).";
+  if (/Failed to fetch/.test(message)) return "La requête n’a pas abouti (service injoignable, ou panne de réseau). Dans l’atelier, seule l’API simulée `https://api.cahierjs.test` répond : vérifie l’adresse.";
+  if (/Promesse rejetée non gérée/.test(message)) return "Une promesse a été rejetée et personne ne l’a attrapée. Ajoute `.catch(...)`, ou entoure les `await` d’un `try / catch`.";
+  if (/await is only valid/.test(message)) return "`await` ne s’utilise que dans une fonction déclarée avec `async`.";
+  if (/Unexpected token|in JSON|JSON at position/.test(message)) return "Le texte n’est pas du JSON valide : clés et textes entre guillemets doubles, pas de virgule en trop.";
   if (/Impossible de charger/.test(message)) return "Vérifie le nom du fichier : il doit être écrit exactement pareil dans l’attribut `src` ou `href` et dans la liste des fichiers.";
   if (/trop longtemps/.test(message)) return "Vérifie ta boucle : sa condition devient-elle un jour fausse ?";
   if (/Assignment to constant/.test(message)) return "Tu essaies de changer une constante. Si la valeur doit changer, déclare-la avec `let`.";

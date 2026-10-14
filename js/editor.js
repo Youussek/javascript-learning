@@ -32,7 +32,7 @@ const SNIPPETS = [
   { label: "foreach", aliases: [], detail: "tableau.forEach(...)", text: "${1:tableau}.forEach((${2:element}) => {\n  $0\n});" },
 ];
 
-const KEYWORDS = ["break", "continue", "true", "false", "null", "undefined", "typeof", "new", "this"];
+const KEYWORDS = ["break", "continue", "true", "false", "null", "undefined", "typeof", "new", "this", "async", "await", "try", "catch", "finally", "throw"];
 
 const GLOBALS = [
   { label: "console", detail: "afficher / déboguer" },
@@ -99,6 +99,10 @@ const MATH_MEMBERS = [
 
 // ─── Catalogues pour les pages web (atelier) ───
 const BROWSER_SNIPPETS = [
+  { label: "asyncfn", aliases: ["async", "af2"], detail: "fonction async avec try / catch", text: 'async function ${1:nom}() {\n  try {\n    $0\n  } catch (erreur) {\n    console.log("Erreur :", erreur.message);\n  }\n}' },
+  { label: "fetchjson", aliases: ["fj", "api"], detail: "fetch + vérification + json()", text: 'const reponse = await fetch("${1:https://api.cahierjs.test/utilisateurs}");\nif (!reponse.ok) {\n  throw new Error("Erreur " + reponse.status);\n}\nconst donnees = await reponse.json();$0' },
+  { label: "timeout", aliases: ["st", "attendre"], detail: "setTimeout", text: 'setTimeout(() => {\n  $0\n}, ${1:1000});' },
+  { label: "interval", aliases: ["si"], detail: "setInterval", text: 'const ${1:minuteur} = setInterval(() => {\n  $0\n}, ${2:1000});' },
   { label: "listen", aliases: ["ael", "ecouter", "evt"], detail: "addEventListener", text: '${1:element}.addEventListener("${2:click}", (event) => {\n  $0\n});' },
   { label: "queryselector", aliases: ["qs", "select"], detail: "document.querySelector()", text: 'const ${1:element} = document.querySelector("${2:.classe}");$0' },
   { label: "byid", aliases: ["id", "gid"], detail: "document.getElementById()", text: 'const ${1:element} = document.getElementById("${2:id}");$0' },
@@ -112,6 +116,12 @@ const BROWSER_GLOBALS = [
   { label: "prompt", detail: "boîte de saisie", text: "prompt($0)" },
   { label: "location", detail: "adresse de la page" },
   { label: "setTimeout", detail: "exécuter plus tard", text: "setTimeout(() => {\n  $0\n}, ${1:1000})" },
+  { label: "setInterval", detail: "répéter régulièrement", text: "setInterval(() => {\n  $0\n}, ${1:1000})" },
+  { label: "clearInterval", detail: "arrêter un setInterval", text: "clearInterval($0)" },
+  { label: "clearTimeout", detail: "annuler un setTimeout", text: "clearTimeout($0)" },
+  { label: "fetch", detail: "faire une requête", text: 'fetch("$0")' },
+  { label: "Promise", detail: "promesses" },
+  { label: "encodeURIComponent", detail: "encoder pour une adresse", text: "encodeURIComponent($0)" },
 ];
 const DOCUMENT_MEMBERS = [
   { label: "title", detail: "titre de la page", text: "title" },
@@ -208,6 +218,24 @@ const EVENT_MEMBERS = [
   { label: "altKey", detail: "Alt enfoncée ?", text: "altKey" },
   { label: "repeat", detail: "touche maintenue ?", text: "repeat" },
 ];
+const JSON_MEMBERS = [
+  { label: "parse", detail: "texte JSON → valeur", text: "parse($0)" },
+  { label: "stringify", detail: "valeur → texte JSON", text: "stringify($0)" },
+];
+const PROMISE_MEMBERS = [
+  { label: "all", detail: "attendre plusieurs promesses", text: "all([$0])" },
+  { label: "resolve", detail: "promesse déjà résolue", text: "resolve($0)" },
+  { label: "reject", detail: "promesse déjà rejetée", text: "reject($0)" },
+];
+const ASYNC_MEMBERS = [
+  { label: "then", detail: "quand la promesse est résolue", text: "then((${1:resultat}) => {\n  $0\n})" },
+  { label: "catch", detail: "si la promesse est rejetée", text: "catch((${1:erreur}) => {\n  $0\n})" },
+  { label: "finally", detail: "dans tous les cas", text: "finally(() => {\n  $0\n})" },
+  { label: "json", detail: "lire le corps en JSON", text: "json()" },
+  { label: "text", detail: "lire le corps en texte", text: "text()" },
+  { label: "ok", detail: "statut 200 à 299 ?", text: "ok" },
+  { label: "status", detail: "code de statut HTTP", text: "status" },
+];
 const CLASSLIST_MEMBERS = [
   { label: "add", detail: "ajouter une classe", text: 'add("$0")' },
   { label: "remove", detail: "retirer une classe", text: 'remove("$0")' },
@@ -277,6 +305,8 @@ function declaredNames(code) {
 }
 
 function membersFor(objectName, language) {
+  if (objectName === "JSON") return JSON_MEMBERS;
+  if (objectName === "Promise") return PROMISE_MEMBERS;
   if (language === "js-browser") {
     if (objectName === "document") return DOCUMENT_MEMBERS;
     if (objectName === "window") return WINDOW_MEMBERS;
@@ -284,7 +314,7 @@ function membersFor(objectName, language) {
     if (objectName === "style") return STYLE_MEMBERS;
     if (objectName === "classList") return CLASSLIST_MEMBERS;
     if (objectName === "event" || objectName === "e" || objectName === "evt") return EVENT_MEMBERS;
-    if (objectName !== "console" && objectName !== "Math") return ELEMENT_MEMBERS.concat(GENERIC_MEMBERS);
+    if (objectName !== "console" && objectName !== "Math") return ELEMENT_MEMBERS.concat(ASYNC_MEMBERS, GENERIC_MEMBERS);
   }
   if (objectName === "console") return CONSOLE_MEMBERS;
   if (objectName === "Math") return MATH_MEMBERS;

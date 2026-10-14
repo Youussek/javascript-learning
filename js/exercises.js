@@ -15,7 +15,8 @@
 //               mustContain / mustNotContain ({ file, re, msg }), solution (liste de fichiers). Les fichiers readOnly ne sont pas modifiables.
 //               actions : ce que « fait » la personne dans la page (clics, saisies, touches…), jouées avant les vérifications.
 //               forbidLogs : messages qui ne doivent PAS apparaître dans la console.
-//               Une vérification avec afterAction: k est évaluée juste après la k-ième action (en partant de 0).
+//               Une vérification avec afterAction: k est évaluée juste après la k-ième action (en partant de 0) ; -1 : avant toute action.
+//               Action { do: "wait", ms } : laisse passer du temps (minuteurs, requêtes). fetch() répond par une API simulée.
 //   "predict" en navigateur : env: "browser" ; simulate (facultatif) : les actions à jouer pour vérifier la réponse.
 //
 // label (optionnel) remplace le nom du type, par exemple « Trouver l’erreur ».
@@ -112,6 +113,25 @@ const TACHES_CSS = `li { display: flex; justify-content: space-between; padding:
 li.fait { text-decoration: line-through; color: gray; }
 .supprimer { border: 0; background: transparent; color: crimson; cursor: pointer; }
 ul { list-style: none; padding: 0; }`;
+
+// ─── Morceaux réutilisés dans les exercices du niveau 6 ───
+const ATTENDRE_CODE = `function attendre(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+`;
+const DIVISER_CODE = `function diviser(a, b) {
+  return new Promise((resolve, reject) => {
+    if (b === 0) {
+      reject(new Error("Division par zéro"));
+    } else {
+      resolve(a / b);
+    }
+  });
+}
+`;
+const CONSOLE_BODY = `<p>Regarde la console.</p>`;
 
 const EXERCISES = [
   // ═════════════ Les variables ═════════════
@@ -4202,6 +4222,868 @@ liste.addEventListener("click", (event) => {
     ],
     explanation: "Le bouton retrouve son `li` avec `closest`, qui porte l’index dans `data-index`. `splice(index, 1)` retire la tâche du tableau, puis `afficher()` redessine la liste (et recalcule les index).",
     retain: "Supprimer = `splice` dans le tableau, puis `afficher()`.",
+  },
+
+  // ═════════════ NIVEAU 6 — setTimeout et callbacks ═════════════
+  {
+    id: "asy-1", lesson: "asynchrone", notion: "setTimeout et callbacks", type: "qcm", difficulty: 1,
+    question: "Que fait `setTimeout(afficher, 1000)` ?",
+    options: [
+      "Il appelle `afficher` une seule fois, environ une seconde plus tard, sans bloquer le reste du code.",
+      "Il bloque tout le programme pendant une seconde, puis appelle `afficher`.",
+      "Il appelle `afficher` toutes les secondes.",
+      "Il appelle `afficher` immédiatement, puis attend une seconde.",
+    ],
+    answer: 0,
+    why: [
+      "",
+      "Le programme ne s’arrête pas : le reste du code continue pendant l’attente.",
+      "C’est le rôle de `setInterval`.",
+      "La fonction n’est pas appelée tout de suite : elle est programmée pour plus tard.",
+    ],
+    hints: [
+      "Le nom signifie « régler un minuteur ».",
+      "La page doit rester utilisable pendant l’attente.",
+      "Une seule exécution, après le délai.",
+    ],
+    explanation: "`setTimeout` programme l’appel de la fonction après le délai (en millisecondes) et rend la main tout de suite : le reste du code continue.",
+    retain: "`setTimeout(fonction, ms)` : une fois, plus tard, sans bloquer.",
+  },
+  {
+    id: "asy-2", lesson: "asynchrone", notion: "setTimeout et callbacks", type: "predict", difficulty: 2, env: "browser",
+    question: "Qu’affiche la console ? (une ligne par affichage, dans l’ordre)",
+    code: `console.log("A");
+setTimeout(() => {
+  console.log("B");
+}, 0);
+console.log("C");`,
+    rows: 3,
+    simulate: [{ do: "wait", ms: 100 }],
+    answers: ["A\nC\nB"],
+    common: { "A\nB\nC": "Même avec un délai de 0, le callback de `setTimeout` attend que le code en cours soit terminé : « C » passe avant « B »." },
+    hints: [
+      "Le callback de `setTimeout` n’est pas exécuté tout de suite, même avec 0 ms.",
+      "Il passe après tout le code synchrone en cours.",
+      "Ordre : A, C, puis B.",
+    ],
+    explanation: "`console.log(\"A\")` et `console.log(\"C\")` sont synchrones : ils s’exécutent d’abord. Le callback de `setTimeout` (avec « B ») est mis en file d’attente et s’exécute ensuite.",
+    retain: "Le code synchrone passe avant tous les callbacks, même à 0 ms.",
+  },
+  {
+    id: "asy-3", lesson: "asynchrone", notion: "setTimeout et callbacks", type: "qcm", label: "Trouver l’erreur", difficulty: 2,
+    question: "« Bonjour ! » s’affiche immédiatement, et non après une seconde. Pourquoi ?",
+    code: `function saluer() {
+  console.log("Bonjour !");
+}
+
+setTimeout(saluer(), 1000);`,
+    options: [
+      "`saluer()` est appelée tout de suite : il faut donner la fonction sans parenthèses, `saluer`.",
+      "Le délai est trop court.",
+      "`setTimeout` ne fonctionne pas avec une fonction nommée.",
+      "Il manque `await` devant `setTimeout`.",
+    ],
+    answer: 0,
+    why: [
+      "",
+      "Le délai de 1000 ms est correct : le problème vient de l’appel.",
+      "`setTimeout` accepte aussi bien une fonction nommée qu’une fonction fléchée.",
+      "`await` n’a rien à faire ici.",
+    ],
+    hints: [
+      "Regarde ce qu’on donne comme premier argument.",
+      "Avec des parenthèses, la fonction est exécutée tout de suite.",
+      "Écris `setTimeout(saluer, 1000);`",
+    ],
+    explanation: "`saluer()` exécute la fonction immédiatement et donne son résultat (`undefined`) à `setTimeout`. Pour la programmer, on donne la fonction elle-même : `saluer`.",
+    retain: "On donne la fonction (`saluer`), pas son appel (`saluer()`).",
+  },
+  {
+    id: "asy-4", lesson: "asynchrone", notion: "setTimeout et callbacks", type: "lab", difficulty: 2,
+    question: "Avec `setTimeout`, affiche « Bonjour ! » dans la console après 200 millisecondes.",
+    files: labFiles(CONSOLE_BODY, `// Affiche « Bonjour ! » après 200 ms
+`, { lockHtml: true }),
+    actions: [{ do: "wait", ms: 600 }],
+    tests: [],
+    expectLogs: [{ level: "log", text: "Bonjour !", label: "La console doit afficher « Bonjour ! » après le délai." }],
+    mustContain: [{ file: "script.js", re: "setTimeout", msg: "Utilise `setTimeout`." }],
+    solution: [{ name: "script.js", code: `setTimeout(() => {
+  console.log("Bonjour !");
+}, 200);` }],
+    hints: [
+      "`setTimeout` reçoit deux arguments : une fonction et un délai en millisecondes.",
+      "La fonction contient le `console.log`.",
+      "`setTimeout(() => { console.log(\"Bonjour !\"); }, 200);`",
+    ],
+    explanation: "La fonction fléchée est le callback : elle s’exécute 200 ms plus tard. Le délai est le deuxième argument.",
+    retain: "`setTimeout(() => { ... }, délai)`.",
+  },
+  {
+    id: "asy-5", lesson: "asynchrone", notion: "setTimeout et callbacks", type: "lab", difficulty: 3,
+    question: "Au clic sur `#demarrer`, lance un décompte dans `#compte` : il affiche 2, 1, 0 (un tic toutes les 100 ms), puis s’arrête tout seul à 0 (`setInterval` et `clearInterval`).",
+    files: labFiles(`<p id="compte">3</p>
+<button id="demarrer">Démarrer</button>`, `const affichage = document.getElementById("compte");
+const bouton = document.getElementById("demarrer");
+
+// Au clic : décompte de 3 à 0, un tic toutes les 100 ms
+`, { lockHtml: true }),
+    actions: [{ do: "click", target: "#demarrer" }, { do: "wait", ms: 900 }],
+    tests: [{ expr: `document.getElementById("compte").textContent`, expect: "0", label: "Le décompte doit s’arrêter à 0 (et ne pas devenir négatif)" }],
+    expectLogs: [],
+    mustContain: [{ file: "script.js", re: "setInterval", msg: "Utilise `setInterval`." }, { file: "script.js", re: "clearInterval", msg: "Arrête le décompte avec `clearInterval`." }],
+    solution: [{ name: "script.js", code: `const affichage = document.getElementById("compte");
+const bouton = document.getElementById("demarrer");
+let reste = 3;
+let minuteur = null;
+
+bouton.addEventListener("click", () => {
+  clearInterval(minuteur);
+  reste = 3;
+  affichage.textContent = reste;
+  minuteur = setInterval(() => {
+    reste--;
+    affichage.textContent = reste;
+    if (reste === 0) {
+      clearInterval(minuteur);
+    }
+  }, 100);
+});` }],
+    hints: [
+      "Il faut une variable `reste` (en dehors du gestionnaire) et un identifiant de minuteur à conserver.",
+      "`setInterval(() => { ... }, 100)` répète la fonction ; elle diminue `reste` et met à jour l’affichage.",
+      "Quand `reste === 0`, appelle `clearInterval(minuteur);`.",
+    ],
+    explanation: "`setInterval` répète la fonction toutes les 100 ms. À chaque tic, on diminue le compteur et on l’affiche. Quand il atteint 0, `clearInterval` arrête la répétition : sans cela, le nombre deviendrait négatif.",
+    retain: "`setInterval` + condition d’arrêt avec `clearInterval`.",
+  },
+
+  // ═════════════ NIVEAU 6 — Promesses ═════════════
+  {
+    id: "pro-1", lesson: "promesses", notion: "Promesses", type: "qcm", difficulty: 1,
+    question: "Quels sont les trois états possibles d’une promesse ?",
+    options: [
+      "En attente, résolue, rejetée.",
+      "Démarrée, en cours, terminée.",
+      "Vraie, fausse, inconnue.",
+      "Synchrone, asynchrone, différée.",
+    ],
+    answer: 0,
+    why: [
+      "",
+      "Ces trois mots décrivent une tâche, pas une promesse.",
+      "Une promesse n’est pas un booléen.",
+      "Ce sont des modes d’exécution, pas des états.",
+    ],
+    hints: [
+      "Une promesse commence sans résultat, puis réussit ou échoue.",
+      "Les mots anglais sont pending, fulfilled, rejected.",
+      "En attente, résolue, rejetée.",
+    ],
+    explanation: "Une promesse est d’abord en attente (pending). Elle devient ensuite résolue (fulfilled, avec une valeur) ou rejetée (rejected, avec une erreur).",
+    retain: "pending → fulfilled ou rejected.",
+  },
+  {
+    id: "pro-2", lesson: "promesses", notion: "Promesses", type: "predict", difficulty: 3, env: "browser",
+    question: "Qu’affiche la console ? (une ligne par affichage, dans l’ordre)",
+    code: `console.log("A");
+setTimeout(() => console.log("B"), 0);
+Promise.resolve().then(() => console.log("C"));
+console.log("D");`,
+    rows: 4,
+    simulate: [{ do: "wait", ms: 100 }],
+    answers: ["A\nD\nC\nB"],
+    common: { "A\nD\nB\nC": "Les callbacks de promesses passent avant ceux de `setTimeout`, même à 0 ms.", "A\nB\nC\nD": "Le code synchrone (« A » et « D ») s’exécute d’abord." },
+    hints: [
+      "Le code synchrone passe en premier : A et D.",
+      "Ensuite, les callbacks des promesses (`then`).",
+      "Enfin, ceux de `setTimeout` : A, D, C, B.",
+    ],
+    explanation: "Ordre : le code synchrone (A, D), puis les callbacks de promesses (C), puis ceux des minuteurs (B).",
+    retain: "Synchrone → promesses → minuteurs.",
+  },
+  {
+    id: "pro-3", lesson: "promesses", notion: "Promesses", type: "qcm", label: "Trouver l’erreur", difficulty: 2,
+    question: "La console affiche `suite : undefined` au lieu de `suite : 500`. Pourquoi ?",
+    code: `diviser(10, 2)
+  .then((resultat) => {
+    resultat * 100;
+  })
+  .then((suite) => {
+    console.log("suite :", suite);
+  });`,
+    options: [
+      "Le premier `then` ne retourne rien : il manque `return`.",
+      "`diviser(10, 2)` est rejetée.",
+      "Il ne peut pas y avoir deux `then` à la suite.",
+      "Il faut remplacer `then` par `catch`.",
+    ],
+    answer: 0,
+    why: [
+      "",
+      "Elle est résolue avec 5 : le premier `then` s’exécute bien.",
+      "On peut enchaîner autant de `then` qu’on veut.",
+      "`catch` ne reçoit que les erreurs.",
+    ],
+    hints: [
+      "La valeur passée au `then` suivant est ce que le premier retourne.",
+      "Le premier `then` calcule `resultat * 100` sans l’utiliser.",
+      "Écris `return resultat * 100;`.",
+    ],
+    explanation: "Sans `return`, la fonction renvoie `undefined`, et c’est cette valeur que reçoit le `then` suivant.",
+    retain: "Pour passer une valeur au `then` suivant : `return`.",
+  },
+  {
+    id: "pro-4", lesson: "promesses", notion: "Promesses", type: "lab", difficulty: 3,
+    question: "Écris la fonction `attendre(ms)` : elle renvoie une promesse qui se résout après `ms` millisecondes. Puis utilise-la pour afficher « Terminé » dans la console 200 ms plus tard (avec `then`).",
+    files: labFiles(CONSOLE_BODY, `// function attendre(ms) { ... }
+`, { lockHtml: true }),
+    actions: [{ do: "wait", ms: 600 }],
+    tests: [{ expr: `typeof attendre`, expect: "function", label: "`attendre` doit être une fonction" }],
+    expectLogs: [{ level: "log", text: "Terminé", label: "La console doit afficher « Terminé »." }],
+    mustContain: [{ file: "script.js", re: "new\\s+Promise", msg: "Crée la promesse avec `new Promise(...)`." }, { file: "script.js", re: "\\.then", msg: "Utilise `.then(...)`." }],
+    solution: [{ name: "script.js", code: ATTENDRE_CODE + `
+attendre(200).then(() => {
+  console.log("Terminé");
+});` }],
+    hints: [
+      "`attendre` renvoie `new Promise((resolve) => { ... })`.",
+      "Dans la promesse, appelle `resolve` après `ms` millisecondes avec `setTimeout`.",
+      "`setTimeout(resolve, ms)` à l’intérieur ; puis `attendre(200).then(() => { console.log(\"Terminé\"); });`",
+    ],
+    explanation: "La promesse est résolue par `setTimeout(resolve, ms)`. Le `then` s’exécute quand elle est résolue, soit 200 ms plus tard.",
+    retain: "`new Promise((resolve) => setTimeout(resolve, ms))`.",
+  },
+  {
+    id: "pro-5", lesson: "promesses", notion: "Promesses", type: "lab", difficulty: 3,
+    question: "Écris la fonction `verifierAge(age)` : elle renvoie une promesse résolue avec le texte « Majeur » si `age` est au moins 18, sinon rejetée avec `new Error(\"Trop jeune\")`. Appelle-la avec 20, puis avec 15 : affiche « Majeur » avec `then`, et « Erreur : Trop jeune » avec `catch`.",
+    files: labFiles(CONSOLE_BODY, `// function verifierAge(age) { ... }
+`, { lockHtml: true }),
+    actions: [{ do: "wait", ms: 300 }],
+    tests: [{ expr: `typeof verifierAge`, expect: "function", label: "`verifierAge` doit être une fonction" }],
+    expectLogs: [
+      { level: "log", text: "Majeur", label: "La console doit afficher « Majeur » (pour 20 ans)." },
+      { level: "log", text: "Erreur : Trop jeune", label: "La console doit afficher « Erreur : Trop jeune » (pour 15 ans)." },
+    ],
+    mustContain: [{ file: "script.js", re: "reject", msg: "Utilise `reject(...)` pour le cas d’erreur." }, { file: "script.js", re: "\\.catch", msg: "Utilise `.catch(...)`." }],
+    solution: [{ name: "script.js", code: `function verifierAge(age) {
+  return new Promise((resolve, reject) => {
+    if (age >= 18) {
+      resolve("Majeur");
+    } else {
+      reject(new Error("Trop jeune"));
+    }
+  });
+}
+
+verifierAge(20).then((resultat) => {
+  console.log(resultat);
+});
+
+verifierAge(15).catch((erreur) => {
+  console.log("Erreur : " + erreur.message);
+});` }],
+    hints: [
+      "Dans la promesse, un `if` choisit entre `resolve(...)` et `reject(...)`.",
+      "`verifierAge(20).then(...)` affiche le résultat ; `verifierAge(15).catch(...)` affiche l’erreur.",
+      "L’objet erreur a une propriété `message` : `\"Erreur : \" + erreur.message`.",
+    ],
+    explanation: "La promesse est résolue ou rejetée selon l’âge. `then` reçoit la valeur de `resolve`, `catch` reçoit l’erreur de `reject`.",
+    retain: "`resolve(valeur)` → `then` ; `reject(erreur)` → `catch`.",
+  },
+
+  // ═════════════ NIVEAU 6 — async / await ═════════════
+  {
+    id: "awa-1", lesson: "async-await", notion: "async et await", type: "qcm", difficulty: 1,
+    question: "Que renvoie toujours une fonction déclarée avec `async` ?",
+    options: ["Une promesse", "Un tableau", "`undefined`", "Un nombre"],
+    answer: 0,
+    why: [
+      "",
+      "Elle ne renvoie pas un tableau, sauf si elle renvoie un tableau dans la promesse.",
+      "Elle renvoie une promesse, même sans `return` (résolue avec `undefined`).",
+      "Le type de la valeur dépend de la fonction, mais l’enveloppe est une promesse.",
+    ],
+    hints: [
+      "Pense à ce qu’on peut faire avec le résultat d’une fonction async (`.then`, `await`).",
+      "C’est ce qui permet d’attendre son résultat.",
+      "Une promesse.",
+    ],
+    explanation: "Une fonction `async` renvoie toujours une promesse, résolue avec la valeur du `return` (ou rejetée si une exception est lancée).",
+    retain: "`async` → renvoie une promesse.",
+  },
+  {
+    id: "awa-2", lesson: "async-await", notion: "async et await", type: "predict", difficulty: 3, env: "browser",
+    question: "Qu’affiche la console ? (une ligne par affichage, dans l’ordre)",
+    code: `function attendre(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function f() {
+  console.log("1");
+  await attendre(50);
+  console.log("3");
+}
+
+f();
+console.log("2");`,
+    rows: 3,
+    simulate: [{ do: "wait", ms: 300 }],
+    answers: ["1\n2\n3"],
+    common: { "1\n3\n2": "`await` met la fonction `f` en pause, mais le script continue : « 2 » s’affiche avant « 3 ».", "2\n1\n3": "`f()` s’exécute jusqu’au premier `await` tout de suite : « 1 » s’affiche avant « 2 »." },
+    hints: [
+      "`f()` s’exécute normalement jusqu’au premier `await`.",
+      "À cet endroit, `f` se met en pause et le script continue.",
+      "Ordre : 1 (avant l’await), 2 (script), 3 (après l’attente).",
+    ],
+    explanation: "`f()` affiche « 1 », puis se met en pause sur `await`. Le script continue et affiche « 2 ». Quand l’attente est terminée, `f` reprend et affiche « 3 ».",
+    retain: "`await` met la fonction en pause, pas le script.",
+  },
+  {
+    id: "awa-3", lesson: "async-await", notion: "async et await", type: "qcm", label: "Trouver l’erreur", difficulty: 2,
+    question: "Le navigateur refuse le script avec une erreur de syntaxe. Pourquoi ?",
+    code: `function lancer() {
+  await attendre(100);
+  console.log("fini");
+}`,
+    options: [
+      "`await` n’est permis que dans une fonction déclarée avec `async`.",
+      "Il manque un point-virgule après `attendre(100)`.",
+      "`attendre` n’est pas une promesse.",
+      "Il faut écrire `await` après l’appel : `attendre(100) await`.",
+    ],
+    answer: 0,
+    why: [
+      "",
+      "Le point-virgule est facultatif ici.",
+      "Même si `attendre` ne renvoyait pas une promesse, ce ne serait pas une erreur de syntaxe.",
+      "`await` se place avant l’expression, pas après.",
+    ],
+    hints: [
+      "Regarde la déclaration de la fonction.",
+      "Il manque un mot-clé devant `function`.",
+      "`async function lancer() { ... }`",
+    ],
+    explanation: "`await` ne peut apparaître que dans une fonction `async`. Il suffit d’ajouter `async` devant `function`.",
+    retain: "`await` seulement dans une fonction `async`.",
+  },
+  {
+    id: "awa-4", lesson: "async-await", notion: "async et await", type: "lab", difficulty: 2,
+    question: "La fonction `attendre(ms)` est fournie. Écris une fonction `async` nommée `lancer` qui attend 200 ms avec `await`, puis affiche « Prêt ». Appelle-la.",
+    files: labFiles(CONSOLE_BODY, ATTENDRE_CODE + `
+// Écris la fonction async lancer
+`, { lockHtml: true }),
+    actions: [{ do: "wait", ms: 700 }],
+    tests: [],
+    expectLogs: [{ level: "log", text: "Prêt", label: "La console doit afficher « Prêt »." }],
+    mustContain: [{ file: "script.js", re: "async\\s+function", msg: "Déclare la fonction avec `async`." }, { file: "script.js", re: "await\\s+attendre", msg: "Utilise `await attendre(200)`." }],
+    solution: [{ name: "script.js", code: ATTENDRE_CODE + `
+async function lancer() {
+  await attendre(200);
+  console.log("Prêt");
+}
+
+lancer();` }],
+    hints: [
+      "Déclare : `async function lancer() { ... }`.",
+      "À l’intérieur : `await attendre(200);` puis le `console.log`.",
+      "N’oublie pas d’appeler `lancer();` à la fin du script.",
+    ],
+    explanation: "`await attendre(200)` met `lancer` en pause 200 ms, puis la fonction reprend et affiche « Prêt ».",
+    retain: "`async function` + `await promesse`.",
+  },
+  {
+    id: "awa-5", lesson: "async-await", notion: "async et await", type: "lab", difficulty: 3,
+    question: "La fonction `diviser(a, b)` est fournie (elle rejette si `b` vaut 0). Écris une fonction `async` `calculer` qui attend `diviser(8, 0)` dans un `try`. Dans le `catch`, affiche « Erreur : » suivi du message de l’erreur ; dans un `finally`, affiche « Fin ». Appelle `calculer()`.",
+    files: labFiles(CONSOLE_BODY, DIVISER_CODE + `
+// Écris la fonction async calculer
+`, { lockHtml: true }),
+    actions: [{ do: "wait", ms: 400 }],
+    tests: [],
+    expectLogs: [
+      { level: "log", text: "Erreur : Division par zéro", label: "La console doit afficher « Erreur : Division par zéro »." },
+      { level: "log", text: "Fin", label: "La console doit afficher « Fin »." },
+    ],
+    mustContain: [{ file: "script.js", re: "try", msg: "Utilise un bloc `try / catch`." }, { file: "script.js", re: "finally", msg: "Utilise un bloc `finally`." }],
+    solution: [{ name: "script.js", code: DIVISER_CODE + `
+async function calculer() {
+  try {
+    const resultat = await diviser(8, 0);
+    console.log("Résultat :", resultat);
+  } catch (erreur) {
+    console.log("Erreur : " + erreur.message);
+  } finally {
+    console.log("Fin");
+  }
+}
+
+calculer();` }],
+    hints: [
+      "Entoure le `await` d’un `try { ... } catch (erreur) { ... } finally { ... }`.",
+      "La promesse rejetée devient une exception : le code saute au `catch`.",
+      "Dans le `catch` : `console.log(\"Erreur : \" + erreur.message);`. Dans le `finally` : `console.log(\"Fin\");`.",
+    ],
+    explanation: "Le rejet de la promesse est lancé comme une exception à l’endroit du `await`. Le `catch` l’attrape ; le `finally` s’exécute dans tous les cas.",
+    retain: "`try / catch / finally` autour des `await`.",
+  },
+
+  // ═════════════ NIVEAU 6 — JSON ═════════════
+  {
+    id: "jso-1", lesson: "json", notion: "JSON", type: "qcm", difficulty: 1,
+    question: "Lequel de ces textes est du JSON valide ?",
+    options: [
+      "`{\"nom\": \"Léa\"}`",
+      "`{nom: \"Léa\"}`",
+      "`{'nom': 'Léa'}`",
+      "`{\"nom\": \"Léa\",}`",
+    ],
+    answer: 0,
+    why: [
+      "",
+      "En JSON, les clés doivent être entre guillemets doubles.",
+      "Les guillemets simples ne sont pas permis en JSON.",
+      "La virgule finale n’est pas permise en JSON.",
+    ],
+    hints: [
+      "JSON est plus strict que les objets JavaScript.",
+      "Clés et textes entre guillemets doubles, pas de virgule finale.",
+      "Le premier : `{\"nom\": \"Léa\"}`.",
+    ],
+    explanation: "Les trois autres violent une règle de JSON : clé sans guillemets, guillemets simples, virgule finale.",
+    retain: "JSON : guillemets doubles partout, pas de virgule finale.",
+  },
+  {
+    id: "jso-2", lesson: "json", notion: "JSON", type: "predict", difficulty: 2,
+    question: "Qu’affiche ce code ? (une ligne par `console.log`)",
+    code: `console.log(JSON.stringify({ a: 1, b: [2, 3] }));
+console.log(JSON.parse("[1,2,3]").length);`,
+    rows: 2,
+    answers: ["{\"a\":1,\"b\":[2,3]}\n3"],
+    common: { "{a:1,b:[2,3]}\n3": "`JSON.stringify` produit du JSON : les clés sont entre guillemets doubles." },
+    hints: [
+      "`stringify` produit un texte JSON, sans espaces.",
+      "`parse(\"[1,2,3]\")` donne un tableau de 3 éléments.",
+      "Ligne 1 : `{\"a\":1,\"b\":[2,3]}`. Ligne 2 : `3`.",
+    ],
+    explanation: "`JSON.stringify` transforme l’objet en texte JSON compact. `JSON.parse(\"[1,2,3]\")` donne le tableau `[1, 2, 3]`, de longueur 3.",
+    retain: "`stringify` : valeur → texte. `parse` : texte → valeur.",
+  },
+  {
+    id: "jso-3", lesson: "json", notion: "JSON", type: "qcm", label: "Trouver l’erreur", difficulty: 2,
+    question: "La console affiche `undefined` au lieu de `Léa`. Pourquoi ?",
+    code: `const texte = '{"nom":"Léa","age":20}';
+console.log(texte.nom);`,
+    options: [
+      "`texte` est une chaîne de caractères : il faut d’abord la convertir avec `JSON.parse`.",
+      "La clé `nom` n’existe pas dans le JSON.",
+      "Il faut écrire `texte.nom()`.",
+      "Le JSON est invalide.",
+    ],
+    answer: 0,
+    why: [
+      "",
+      "La clé existe bien : le problème est que le texte n’a pas été converti.",
+      "`nom` est une propriété, pas une fonction.",
+      "Le JSON est valide : guillemets doubles, pas de virgule finale.",
+    ],
+    hints: [
+      "Quel est le type de `texte` ?",
+      "Une chaîne de caractères n’a pas de propriété `nom`.",
+      "`JSON.parse(texte).nom`",
+    ],
+    explanation: "Tant qu’on n’a pas appelé `JSON.parse`, `texte` n’est qu’un texte. `JSON.parse(texte).nom` donne `\"Léa\"`.",
+    retain: "Un JSON reçu est du texte : `JSON.parse` avant de lire les champs.",
+  },
+  {
+    id: "jso-4", lesson: "json", notion: "JSON", type: "lab", difficulty: 2,
+    question: "Convertis le texte JSON `reponse` en objet avec `JSON.parse`, puis affiche la ville, puis la température (une valeur par `console.log`).",
+    files: labFiles(CONSOLE_BODY, `const reponse = '{"ville":"Lyon","temperature":15}';
+
+// Convertis reponse, puis affiche la ville et la température
+`, { lockHtml: true }),
+    tests: [],
+    expectLogs: [
+      { level: "log", text: "Lyon", label: "La console doit afficher « Lyon »." },
+      { level: "log", text: "15", label: "La console doit afficher « 15 »." },
+    ],
+    mustContain: [{ file: "script.js", re: "JSON\\.parse", msg: "Utilise `JSON.parse`." }],
+    solution: [{ name: "script.js", code: `const reponse = '{"ville":"Lyon","temperature":15}';
+
+const donnees = JSON.parse(reponse);
+console.log(donnees.ville);
+console.log(donnees.temperature);` }],
+    hints: [
+      "`JSON.parse(reponse)` renvoie un objet : range-le dans une constante.",
+      "Les champs se lisent avec un point : `donnees.ville`.",
+      "`console.log(donnees.ville);` puis `console.log(donnees.temperature);`",
+    ],
+    explanation: "`JSON.parse` transforme le texte en objet ; on lit ensuite ses propriétés comme pour n’importe quel objet.",
+    retain: "`const donnees = JSON.parse(texte);`",
+  },
+  {
+    id: "jso-5", lesson: "json", notion: "JSON", type: "lab", difficulty: 2,
+    question: "Transforme l’objet `eleve` en texte JSON avec `JSON.stringify`, et affiche ce texte.",
+    files: labFiles(CONSOLE_BODY, `const eleve = { nom: "Léa", age: 20 };
+
+// Affiche le texte JSON de l'objet
+`, { lockHtml: true }),
+    tests: [],
+    expectLogs: [{ level: "log", text: "{\"nom\":\"Léa\",\"age\":20}", label: "La console doit afficher {\"nom\":\"Léa\",\"age\":20}." }],
+    mustContain: [{ file: "script.js", re: "JSON\\.stringify", msg: "Utilise `JSON.stringify`." }],
+    solution: [{ name: "script.js", code: `const eleve = { nom: "Léa", age: 20 };
+
+console.log(JSON.stringify(eleve));` }],
+    hints: [
+      "`JSON.stringify(objet)` renvoie un texte.",
+      "Affiche ce texte avec `console.log`.",
+      "`console.log(JSON.stringify(eleve));`",
+    ],
+    explanation: "`JSON.stringify(eleve)` produit le texte JSON compact : `{\"nom\":\"Léa\",\"age\":20}`.",
+    retain: "`JSON.stringify(valeur)` : valeur → texte.",
+  },
+  {
+    id: "jso-6", lesson: "json", notion: "JSON", type: "lab", difficulty: 3,
+    question: "Le texte ci-dessous n’est pas du JSON valide. Appelle `JSON.parse` dessus dans un `try`, et affiche « JSON invalide » dans le `catch`.",
+    files: labFiles(CONSOLE_BODY, `const texte = "{nom: Léa}";
+
+// try / catch autour de JSON.parse
+`, { lockHtml: true }),
+    tests: [],
+    expectLogs: [{ level: "log", text: "JSON invalide", label: "La console doit afficher « JSON invalide »." }],
+    mustContain: [{ file: "script.js", re: "try", msg: "Utilise un bloc `try / catch`." }],
+    solution: [{ name: "script.js", code: `const texte = "{nom: Léa}";
+
+try {
+  const objet = JSON.parse(texte);
+  console.log(objet);
+} catch (erreur) {
+  console.log("JSON invalide");
+}` }],
+    hints: [
+      "`JSON.parse` lance une exception si le texte est invalide.",
+      "Mets l’appel dans un `try { ... }`, et le message dans le `catch`.",
+      "`catch (erreur) { console.log(\"JSON invalide\"); }`",
+    ],
+    explanation: "`JSON.parse` lance une `SyntaxError` : l’exécution saute au `catch`, qui affiche le message. Le programme ne plante pas.",
+    retain: "`try / catch` autour de `JSON.parse` quand le texte vient de l’extérieur.",
+  },
+
+  // ═════════════ NIVEAU 6 — fetch ═════════════
+  {
+    id: "fet-1", lesson: "fetch", notion: "fetch", type: "qcm", difficulty: 2,
+    question: "Le serveur répond avec le statut 404. Que devient la promesse renvoyée par `fetch` ?",
+    options: [
+      "Elle est résolue : `reponse.ok` vaut `false` et `reponse.status` vaut 404.",
+      "Elle est rejetée : le `catch` est exécuté.",
+      "Elle reste en attente pour toujours.",
+      "Elle est résolue avec la valeur `null`.",
+    ],
+    answer: 0,
+    why: [
+      "",
+      "`fetch` ne rejette que pour un problème réseau, pas pour un statut d’erreur.",
+      "La réponse est bien arrivée : la promesse est terminée.",
+      "Elle est résolue avec un objet `Response`, pas `null`.",
+    ],
+    hints: [
+      "Un 404 est une réponse valide du serveur : « je n’ai pas trouvé ».",
+      "`fetch` ne rejette que si la requête n’a pas pu aboutir du tout.",
+      "La promesse est résolue, avec `ok` à `false`.",
+    ],
+    explanation: "`fetch` rejette sa promesse uniquement quand la requête n’aboutit pas (réseau). Pour un 404 ou un 500, la réponse arrive : c’est à toi de tester `reponse.ok`.",
+    retain: "`fetch` ne rejette pas sur 404 / 500 : teste `reponse.ok`.",
+  },
+  {
+    id: "fet-2", lesson: "fetch", notion: "fetch", type: "vf", difficulty: 2,
+    statement: "`reponse.json()` renvoie directement l’objet JavaScript, sans qu’il faille l’attendre.",
+    answer: false,
+    why: "`reponse.json()` renvoie une promesse : la lecture du corps est asynchrone. Il faut `await reponse.json()` (ou un `.then`).",
+    hints: [
+      "Le corps de la réponse peut arriver en plusieurs morceaux.",
+      "La lecture est elle aussi asynchrone.",
+      "L’affirmation est fausse : il faut `await`.",
+    ],
+    explanation: "`json()` renvoie une promesse, résolue avec l’objet quand le corps a été lu et converti. D’où le second `await`.",
+    retain: "`const donnees = await reponse.json();`",
+  },
+  {
+    id: "fet-3", lesson: "fetch", notion: "fetch", type: "lab", difficulty: 3,
+    question: "Écris une fonction `async` qui récupère l’utilisateur 2 (`https://api.cahierjs.test/utilisateurs/2`), lit sa réponse JSON et affiche son nom dans la console. Appelle-la.",
+    files: labFiles(CONSOLE_BODY, `// Charge l'utilisateur 2 et affiche son nom
+`, { lockHtml: true }),
+    actions: [{ do: "wait", ms: 800 }],
+    tests: [],
+    expectLogs: [{ level: "log", text: "Sam", label: "La console doit afficher « Sam »." }],
+    mustContain: [{ file: "script.js", re: "fetch", msg: "Utilise `fetch`." }, { file: "script.js", re: "\\.json\\(\\)", msg: "Lis la réponse avec `reponse.json()`." }],
+    solution: [{ name: "script.js", code: `async function charger() {
+  const reponse = await fetch("https://api.cahierjs.test/utilisateurs/2");
+  const utilisateur = await reponse.json();
+  console.log(utilisateur.nom);
+}
+
+charger();` }],
+    hints: [
+      "Une fonction `async` avec deux `await` : un pour `fetch`, un pour `json()`.",
+      "`const reponse = await fetch(adresse);` puis `const utilisateur = await reponse.json();`",
+      "Affiche `utilisateur.nom`, et appelle la fonction : `charger();`.",
+    ],
+    explanation: "Le premier `await` attend la réponse, le second attend la lecture du corps. L’objet reçu a un champ `nom`.",
+    retain: "`await fetch(...)` puis `await reponse.json()`.",
+  },
+  {
+    id: "fet-4", lesson: "fetch", notion: "fetch", type: "lab", difficulty: 3,
+    question: "Charge l’utilisateur 99 (`/utilisateurs/99`) : il n’existe pas. Si `reponse.ok` est faux, affiche « Utilisateur introuvable » dans la console ; sinon, affiche son nom.",
+    files: labFiles(CONSOLE_BODY, `// Charge l'utilisateur 99 et gère le cas où il n'existe pas
+`, { lockHtml: true }),
+    actions: [{ do: "wait", ms: 800 }],
+    tests: [],
+    expectLogs: [{ level: "log", text: "Utilisateur introuvable", label: "La console doit afficher « Utilisateur introuvable »." }],
+    mustContain: [{ file: "script.js", re: "\\.ok", msg: "Teste `reponse.ok`." }],
+    solution: [{ name: "script.js", code: `async function charger() {
+  const reponse = await fetch("https://api.cahierjs.test/utilisateurs/99");
+  if (!reponse.ok) {
+    console.log("Utilisateur introuvable");
+    return;
+  }
+  const utilisateur = await reponse.json();
+  console.log(utilisateur.nom);
+}
+
+charger();` }],
+    hints: [
+      "Après le `fetch`, teste `reponse.ok` avant de lire le corps.",
+      "`if (!reponse.ok) { ... }` : affiche le message, puis quitte la fonction avec `return`.",
+      "Sinon, lis `await reponse.json()` et affiche le nom.",
+    ],
+    explanation: "La réponse 404 n’est pas un rejet : `reponse.ok` vaut `false`. On gère ce cas explicitement avant d’utiliser les données.",
+    retain: "`if (!reponse.ok) { ...; return; }`",
+  },
+  {
+    id: "fet-5", lesson: "fetch", notion: "fetch", type: "lab", difficulty: 3,
+    question: "Récupère la liste des utilisateurs (`/utilisateurs`) et ajoute dans `#liste` un `<li>` par utilisateur, avec son nom.",
+    files: labFiles(`<ul id="liste"></ul>`, `const liste = document.getElementById("liste");
+
+// Charge les utilisateurs et affiche leurs noms
+`, { lockHtml: true }),
+    actions: [{ do: "wait", ms: 800 }],
+    tests: [{ expr: `Array.from(document.querySelectorAll("#liste li")).map((li) => li.textContent)`, expect: ["Léa", "Sam", "Inès"], label: "La liste doit contenir Léa, Sam, Inès" }],
+    expectLogs: [],
+    mustContain: [{ file: "script.js", re: "fetch", msg: "Utilise `fetch`." }],
+    solution: [{ name: "script.js", code: `const liste = document.getElementById("liste");
+
+async function charger() {
+  const reponse = await fetch("https://api.cahierjs.test/utilisateurs");
+  const utilisateurs = await reponse.json();
+  utilisateurs.forEach((utilisateur) => {
+    const li = document.createElement("li");
+    li.textContent = utilisateur.nom;
+    liste.append(li);
+  });
+}
+
+charger();` }],
+    hints: [
+      "La réponse est un tableau d’objets : parcours-le avec `forEach`.",
+      "Pour chaque utilisateur : `createElement(\"li\")`, `textContent`, `liste.append(li)`.",
+      "N’oublie pas d’appeler ta fonction `async`.",
+    ],
+    explanation: "`await reponse.json()` donne un tableau. Une boucle crée un `li` par élément, comme au niveau 3, mais avec des données venues d’une API.",
+    retain: "Données d’API + `createElement` = liste dans la page.",
+  },
+  {
+    id: "fet-6", lesson: "fetch", notion: "fetch", type: "lab", difficulty: 3,
+    question: "Envoie un message avec `POST` à `https://api.cahierjs.test/messages` (en-tête `Content-Type: application/json`, corps `{ auteur: \"Léa\", texte: \"Salut\" }` en JSON). L’API renvoie le message avec un `id` : affiche « Message 42 envoyé » avec cet id.",
+    files: labFiles(CONSOLE_BODY, `// Envoie le message avec POST et affiche l'id reçu
+`, { lockHtml: true }),
+    actions: [{ do: "wait", ms: 800 }],
+    tests: [],
+    expectLogs: [{ level: "log", text: "Message 42 envoyé", label: "La console doit afficher « Message 42 envoyé »." }],
+    mustContain: [{ file: "script.js", re: "POST", msg: "Utilise `method: \"POST\"`." }, { file: "script.js", re: "JSON\\.stringify", msg: "Convertis le corps avec `JSON.stringify`." }],
+    solution: [{ name: "script.js", code: `async function envoyer() {
+  const reponse = await fetch("https://api.cahierjs.test/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ auteur: "Léa", texte: "Salut" }),
+  });
+  const message = await reponse.json();
+  console.log("Message " + message.id + " envoyé");
+}
+
+envoyer();` }],
+    hints: [
+      "Le second argument de `fetch` est un objet avec `method`, `headers` et `body`.",
+      "Le corps doit être du texte JSON : `JSON.stringify({ ... })`.",
+      "Lis la réponse avec `await reponse.json()` et utilise `message.id`.",
+    ],
+    explanation: "Avec `POST`, on envoie des données dans le corps de la requête, en JSON. L’API répond avec le message et un identifiant (`id`).",
+    retain: "`fetch(url, { method: \"POST\", headers, body: JSON.stringify(donnees) })`.",
+  },
+
+  // ═════════════ NIVEAU 6 — Application avec API ═════════════
+  {
+    id: "api-1", lesson: "api", notion: "Chargement et erreurs", type: "qcm", difficulty: 2,
+    question: "Pourquoi réactiver le bouton (`bouton.disabled = false`) dans un bloc `finally` ?",
+    options: [
+      "Le `finally` s’exécute que la requête ait réussi ou échoué : le bouton est toujours réactivé.",
+      "Le `finally` s’exécute avant le `try`.",
+      "Le `finally` ne s’exécute qu’en cas d’erreur.",
+      "Le `finally` est obligatoire avec `fetch`.",
+    ],
+    answer: 0,
+    why: [
+      "",
+      "Il s’exécute après le `try` et le `catch`.",
+      "Il s’exécute dans tous les cas, pas seulement en cas d’erreur.",
+      "Il est facultatif, mais très pratique pour nettoyer.",
+    ],
+    hints: [
+      "Que se passerait-il si le bouton n’était réactivé que dans le `try` ?",
+      "En cas d’erreur, le code saute au `catch` et la ligne de réactivation ne serait jamais exécutée.",
+      "`finally` s’exécute dans tous les cas.",
+    ],
+    explanation: "Si on réactivait le bouton dans le `try`, une erreur laisserait le bouton désactivé pour toujours. `finally` garantit son exécution.",
+    retain: "Nettoyage (bouton, chargement) : dans le `finally`.",
+  },
+  {
+    id: "api-2", lesson: "api", notion: "Chargement et erreurs", type: "vf", difficulty: 1,
+    statement: "On peut écrire sans risque une clé d’API secrète dans le JavaScript d’une page publique.",
+    answer: false,
+    why: "Tout le monde peut lire le JavaScript d’une page (outils de développement, « voir le code source »). Une clé secrète doit rester sur un serveur.",
+    hints: [
+      "Qui peut lire le code d’une page web ?",
+      "N’importe quel visiteur.",
+      "L’affirmation est fausse.",
+    ],
+    explanation: "Le JavaScript d’une page est envoyé à chaque visiteur : n’importe qui peut y lire une clé. Les clés secrètes restent côté serveur.",
+    retain: "Jamais de clé secrète dans le code d’une page publique.",
+  },
+  {
+    id: "api-3", lesson: "api", notion: "Chargement et erreurs", type: "lab", difficulty: 3,
+    question: "Au clic sur `#charger`, charge l’utilisateur 1 (`/utilisateurs/1`). Pendant le chargement, `#statut` affiche « Chargement… » et le bouton est désactivé. Ensuite, `#statut` est vidé, le bouton réactivé (dans un `finally`) et le nom est affiché dans `#nom`.",
+    files: labFiles(`<button id="charger">Charger</button>
+<p id="statut"></p>
+<p id="nom"></p>`, `const bouton = document.getElementById("charger");
+const statut = document.getElementById("statut");
+const nom = document.getElementById("nom");
+
+// Au clic : chargement, résultat, état du bouton
+`, { lockHtml: true }),
+    actions: [{ do: "click", target: "#charger" }, { do: "wait", ms: 60 }, { do: "wait", ms: 700 }],
+    tests: [
+      { expr: `document.getElementById("statut").textContent`, expect: "Chargement…", afterAction: 1, label: "Pendant le chargement, `#statut` doit afficher « Chargement… »" },
+      { expr: `document.getElementById("charger").disabled`, expect: true, afterAction: 1, label: "Pendant le chargement, le bouton doit être désactivé" },
+      { expr: `document.getElementById("statut").textContent`, expect: "", label: "Après le chargement, `#statut` doit être vide" },
+      { expr: `document.getElementById("charger").disabled`, expect: false, label: "Après le chargement, le bouton doit être réactivé" },
+      { expr: `document.getElementById("nom").textContent`, expect: "Léa", label: "`#nom` doit afficher « Léa »" },
+    ],
+    expectLogs: [],
+    mustContain: [{ file: "script.js", re: "finally", msg: "Réactive le bouton dans un bloc `finally`." }],
+    solution: [{ name: "script.js", code: `const bouton = document.getElementById("charger");
+const statut = document.getElementById("statut");
+const nom = document.getElementById("nom");
+
+async function charger() {
+  statut.textContent = "Chargement…";
+  bouton.disabled = true;
+  try {
+    const reponse = await fetch("https://api.cahierjs.test/utilisateurs/1");
+    const utilisateur = await reponse.json();
+    nom.textContent = utilisateur.nom;
+    statut.textContent = "";
+  } finally {
+    bouton.disabled = false;
+  }
+}
+
+bouton.addEventListener("click", charger);` }],
+    hints: [
+      "Avant le `fetch` : affiche « Chargement… » et désactive le bouton.",
+      "Entoure l’appel d’un `try { ... } finally { ... }`.",
+      "Dans le `finally` : `bouton.disabled = false;`. Dans le `try`, après la lecture : `statut.textContent = \"\";`.",
+    ],
+    explanation: "L’état de chargement est visible avant l’appel. Le `finally` réactive le bouton quoi qu’il arrive, et le résultat est affiché en cas de succès.",
+    retain: "Chargement → `try` → `finally`.",
+  },
+  {
+    id: "api-4", lesson: "api", notion: "Chargement et erreurs", type: "lab", difficulty: 3,
+    question: "Le formulaire cherche l’utilisateur dont le numéro est saisi. Si l’API répond 404 (numéro inconnu), affiche « Utilisateur introuvable » dans `#statut`. Sinon, affiche son nom dans `#resultat`.",
+    files: labFiles(`<form id="formulaire">
+  <input id="numero" type="number" value="1">
+  <button type="submit">Chercher</button>
+</form>
+<p id="statut"></p>
+<p id="resultat"></p>`, `const formulaire = document.getElementById("formulaire");
+const numero = document.getElementById("numero");
+const statut = document.getElementById("statut");
+const resultat = document.getElementById("resultat");
+
+// Au submit : appelle l'API et gère le cas « introuvable »
+`, { lockHtml: true }),
+    actions: [{ do: "input", target: "#numero", value: "99" }, { do: "submit", target: "#formulaire" }, { do: "wait", ms: 700 }],
+    tests: [
+      { expr: `document.getElementById("statut").textContent`, expect: "Utilisateur introuvable", label: "Pour le numéro 99, `#statut` doit afficher « Utilisateur introuvable »" },
+      { expr: `document.getElementById("resultat").textContent`, expect: "", label: "`#resultat` doit rester vide" },
+    ],
+    expectLogs: [],
+    forbidLogs: [{ level: "warn", text: "formulaire a été envoyé", label: "Le formulaire est encore envoyé : appelle `event.preventDefault()`." }],
+    mustContain: [{ file: "script.js", re: "\\.ok|\\.status", msg: "Teste `reponse.ok` (ou `reponse.status`)." }],
+    solution: [{ name: "script.js", code: `const formulaire = document.getElementById("formulaire");
+const numero = document.getElementById("numero");
+const statut = document.getElementById("statut");
+const resultat = document.getElementById("resultat");
+
+async function chercher(id) {
+  statut.textContent = "";
+  resultat.textContent = "";
+  const reponse = await fetch("https://api.cahierjs.test/utilisateurs/" + id);
+  if (!reponse.ok) {
+    statut.textContent = "Utilisateur introuvable";
+    return;
+  }
+  const utilisateur = await reponse.json();
+  resultat.textContent = utilisateur.nom;
+}
+
+formulaire.addEventListener("submit", (event) => {
+  event.preventDefault();
+  chercher(numero.value);
+});` }],
+    hints: [
+      "Écoute `submit`, avec `event.preventDefault()` en première ligne.",
+      "Construis l’adresse avec le numéro : `\"https://api.cahierjs.test/utilisateurs/\" + id`.",
+      "Si `!reponse.ok` : écris le message dans `statut` et quitte avec `return`.",
+    ],
+    explanation: "Le formulaire est intercepté, l’API est appelée avec le numéro saisi, et une réponse 404 est traitée comme un cas normal avant de lire le corps.",
+    retain: "Formulaire + `fetch` + test de `reponse.ok`.",
+  },
+  {
+    id: "api-5", lesson: "api", notion: "Chargement et erreurs", type: "lab", difficulty: 3,
+    question: "Le bouton appelle `/erreur`, qui répond toujours avec une erreur 500. Quand la réponse n’est pas `ok`, affiche dans `#statut` « Erreur du serveur (500) », avec le vrai code de `reponse.status`.",
+    files: labFiles(`<button id="bouton">Appeler /erreur</button>
+<p id="statut"></p>`, `const bouton = document.getElementById("bouton");
+const statut = document.getElementById("statut");
+
+// Au clic : appelle /erreur et affiche le code d'erreur
+`, { lockHtml: true }),
+    actions: [{ do: "click", target: "#bouton" }, { do: "wait", ms: 700 }],
+    tests: [{ expr: `document.getElementById("statut").textContent`, expect: "Erreur du serveur (500)", label: "`#statut` doit afficher « Erreur du serveur (500) »" }],
+    expectLogs: [],
+    mustContain: [{ file: "script.js", re: "\\.status", msg: "Utilise `reponse.status` pour afficher le code." }],
+    solution: [{ name: "script.js", code: `const bouton = document.getElementById("bouton");
+const statut = document.getElementById("statut");
+
+bouton.addEventListener("click", async () => {
+  const reponse = await fetch("https://api.cahierjs.test/erreur");
+  if (!reponse.ok) {
+    statut.textContent = "Erreur du serveur (" + reponse.status + ")";
+  }
+});` }],
+    hints: [
+      "Écoute le clic avec une fonction `async`, pour pouvoir utiliser `await`.",
+      "Teste `!reponse.ok`.",
+      "`statut.textContent = \"Erreur du serveur (\" + reponse.status + \")\";`",
+    ],
+    explanation: "`reponse.status` contient le code HTTP (500). On l’insère dans le message pour que la personne sache ce qui s’est passé.",
+    retain: "`reponse.ok` pour savoir, `reponse.status` pour détailler.",
   },
 
 ];
