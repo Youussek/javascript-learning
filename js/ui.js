@@ -296,7 +296,7 @@ function buildReactCodeBody(ex) {
 }
 
 function buildLabBody(ex) {
-  const lab = renderLab({ files: ex.files, previewHeight: ex.previewHeight, tips: true });
+  const lab = renderLab({ files: ex.files, previewHeight: ex.previewHeight, tips: true, live: ex.live === true, previewModes: ex.previewModes === true });
   return {
     node: lab.node,
     reset() { lab.reset(); },

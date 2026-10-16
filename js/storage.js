@@ -14,6 +14,8 @@ function defaultState() {
     exercises: {},      // un dossier par exercice : { "var-1": { attempts, fails, success, review, correctionSeen, points } }
     notions: {},        // compteurs par notion : { "let et const": { ok: 3, ko: 1 } }
     react: { lessonsDone: {}, lastLesson: null, projects: {}, exercises: {}, notions: {}, evaluations: {} }, // progression du parcours React
+    css: { lessonsDone: {}, lastLesson: null, projects: {}, exercises: {}, notions: {}, evaluations: {} }, // progression du parcours CSS
+    html: { lessonsDone: {}, lastLesson: null, projects: {}, exercises: {}, notions: {}, evaluations: {} }, // progression du parcours HTML
     projects: {},       // un dossier par projet : { steps: {0: true}, fails: 2, done: false, correctionSeen: false, draft: {...} }
   };
 }

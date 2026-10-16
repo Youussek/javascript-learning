@@ -433,6 +433,7 @@ function renderLab(options) {
   const settings = options || {};
   const starter = settings.files.map((f) => ({ name: f.name, code: f.code, readOnly: f.readOnly === true }));
   const editors = {};
+  let liveTimer = null;
   const tabs = h("div", { class: "lab-tabs", role: "tablist", "aria-label": "Fichiers" });
   const panes = h("div", { class: "lab-panes" });
   const preview = h("iframe", {
@@ -478,6 +479,12 @@ function renderLab(options) {
     editor.tab = h("button", { class: "lab-tab", type: "button", role: "tab", onclick: () => select(file.name) },
       file.name + (file.readOnly ? " (lecture seule)" : ""));
     editors[file.name] = editor;
+    if (settings.live && !file.readOnly) {
+      editor.addEventListener("input", () => {
+        clearTimeout(liveTimer);
+        liveTimer = setTimeout(() => run([]), 180);
+      });
+    }
     tabs.append(editor.tab);
     panes.append(h("div", { class: "lab-pane", role: "tabpanel" }, editor));
   });
@@ -485,7 +492,12 @@ function renderLab(options) {
   select((starter.find((f) => !f.readOnly) || starter[0]).name);
 
   const toolbar = h("div", { class: "toolbar" },
-    h("button", { class: "btn primary", type: "button", onclick: () => run([]) }, "Exécuter"));
+    h("button", { class: "btn primary", type: "button", onclick: () => run([]) }, settings.live ? "Actualiser" : "Exécuter"));
+  if (settings.previewModes) {
+    [{label:"📱 Mobile",w:"360px"},{label:"▣ Tablette",w:"700px"},{label:"🖥 Desktop",w:"100%"}].forEach(mode => {
+      toolbar.append(h("button", { class:"btn small", type:"button", onclick:()=>{ preview.style.width=mode.w; preview.style.maxWidth="100%"; } }, mode.label));
+    });
+  }
   const node = h("div", { class: "lab" },
     tabs, panes, toolbar,
     h("div", { class: "lab-out" },
@@ -499,9 +511,10 @@ function renderLab(options) {
     consoleBox.replaceChildren(h("p", { class: "console-title" }, "Console"), h("p", { class: "muted small" }, "Code remis à zéro."));
   }
   if (settings.resetButton) toolbar.append(h("button", { class: "btn ghost", type: "button", onclick: reset }, "Réinitialiser"));
+  if (settings.live) setTimeout(() => run([]), 0);
 
   return {
-    node: node, getFiles: getFiles, starter: starter, run: run, reset: reset,
+    node: node, getFiles: getFiles, starter: starter, run: run, reset: reset, preview: preview,
     setCode(name, code) { if (editors[name]) editors[name].value = code; },
     lock() { starter.forEach((f) => { editors[f.name].readOnly = true; }); },
   };

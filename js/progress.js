@@ -14,8 +14,12 @@ function emptyRecord() {
   return { attempts: 0, fails: 0, success: false, review: false, correctionSeen: false, points: 0 };
 }
 
-function isReactExerciseId(exerciseId) {
-  return /^rx-|^reval-/.test(String(exerciseId));
+function exercisePathFromId(exerciseId) {
+  const id = String(exerciseId);
+  if (/^rx-|^reval-/.test(id)) return "react";
+  if (/^cx-|^ceval-/.test(id)) return "css";
+  if (/^hx-|^heval-/.test(id)) return "html";
+  return "javascript";
 }
 
 function ensureReactProgressStores() {
@@ -25,11 +29,30 @@ function ensureReactProgressStores() {
   if (!state.react.evaluations) state.react.evaluations = {};
 }
 
+function ensureCssProgressStores() {
+  if (!state.css) state.css = { lessonsDone: {}, lastLesson: null, projects: {}, exercises: {}, notions: {}, evaluations: {} };
+  if (!state.css.exercises) state.css.exercises = {};
+  if (!state.css.notions) state.css.notions = {};
+  if (!state.css.evaluations) state.css.evaluations = {};
+  if (!state.css.projects) state.css.projects = {};
+  if (!state.css.lessonsDone) state.css.lessonsDone = {};
+}
+
+
+function ensureHtmlProgressStores() {
+  if (!state.html) state.html = { lessonsDone: {}, lastLesson: null, projects: {}, exercises: {}, notions: {}, evaluations: {} };
+  if (!state.html.exercises) state.html.exercises = {};
+  if (!state.html.notions) state.html.notions = {};
+  if (!state.html.evaluations) state.html.evaluations = {};
+  if (!state.html.projects) state.html.projects = {};
+  if (!state.html.lessonsDone) state.html.lessonsDone = {};
+}
+
 function exerciseStore(exerciseId) {
-  if (isReactExerciseId(exerciseId)) {
-    ensureReactProgressStores();
-    return state.react.exercises;
-  }
+  const path = exercisePathFromId(exerciseId);
+  if (path === "react") { ensureReactProgressStores(); return state.react.exercises; }
+  if (path === "css") { ensureCssProgressStores(); return state.css.exercises; }
+  if (path === "html") { ensureHtmlProgressStores(); return state.html.exercises; }
   return state.exercises;
 }
 
@@ -49,6 +72,16 @@ function ensureNotion(name, path) {
     ensureReactProgressStores();
     if (!state.react.notions[name]) state.react.notions[name] = { ok: 0, ko: 0 };
     return state.react.notions[name];
+  }
+  if (path === "css") {
+    ensureCssProgressStores();
+    if (!state.css.notions[name]) state.css.notions[name] = { ok: 0, ko: 0 };
+    return state.css.notions[name];
+  }
+  if (path === "html") {
+    ensureHtmlProgressStores();
+    if (!state.html.notions[name]) state.html.notions[name] = { ok: 0, ko: 0 };
+    return state.html.notions[name];
   }
   if (!state.notions[name]) state.notions[name] = { ok: 0, ko: 0 };
   return state.notions[name];

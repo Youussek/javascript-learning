@@ -199,3 +199,153 @@ Le parcours React possède désormais des exercices et évaluations sur ses cinq
 - Niveau 5 : 32 exercices / 10 questions
 
 Soit 152 exercices, 50 questions d’évaluation et 5 projets. Les ateliers pratiques avancés sont reliés au React Studio interactif lorsque la notion s’y prête.
+
+## Parcours CSS — Niveau 1
+Le hub contient maintenant un troisième parcours **CSS**. Le premier niveau est développé verticalement avant les niveaux suivants : 9 leçons, 36 exercices, preview HTML/CSS en temps réel, révision, évaluation et projet final de carte de profil.
+
+Les ateliers CSS réutilisent le moteur `renderLab()` déjà utilisé par JavaScript : iframe sandboxée, éditeur multi-fichiers et validation DOM/styles calculés. Le mode live et les boutons Mobile/Tablette/Desktop sont activés uniquement pour les activités CSS qui en ont besoin.
+
+## CSS — Niveau 2
+
+Le parcours CSS contient maintenant un deuxième niveau complet consacré à la mise en page : Display, `box-sizing`, positionnement, `z-index` et Flexbox.
+
+Le Niveau 2 ajoute 9 leçons, 36 exercices, 10 questions d'évaluation, 9 ateliers live et le projet final « Page complète avec Flexbox ». Les ateliers réutilisent le navigateur simulé existant avec preview live et modes Mobile / Tablette / Desktop.
+
+## CSS Niveau 3 — Grid & Responsive Design
+
+Le parcours CSS comprend désormais trois niveaux complets. Le Niveau 3 ajoute Grid, responsive design, media queries, unités modernes, `clamp()`, médias fluides, 36 exercices, 9 ateliers interactifs, une évaluation et un projet de landing page responsive.
+
+
+## CSS — Niveau 4
+
+Le Niveau 4 « CSS intermédiaire / avancé » est disponible : 9 leçons, 36 exercices, 10 questions d’évaluation, 9 ateliers interactifs et le projet « Bibliothèque de composants interactifs ». Voir `AUDIT-CSS-NIVEAU4.md`.
+Le Niveau 4 couvre les sélecteurs avancés, pseudo-classes, pseudo-éléments, variables CSS, transitions, transforms, animations, effets modernes et une petite bibliothèque de composants. Il contient 9 leçons, 36 exercices, 10 questions d’évaluation, 9 ateliers interactifs et un projet final d’UI kit.
+
+## CSS — Niveau 5
+
+Le parcours CSS est maintenant complet sur **5 niveaux**. Le Niveau 5 ajoute la couche la plus “projet réel” du parcours :
+
+- cascade, ordre des règles et usage raisonné de `!important` ;
+- spécificité et stratégies pour l’éviter de devenir incontrôlable ;
+- héritage, `inherit`, `initial`, `unset`, `revert` ;
+- architecture CSS, variantes et conventions de nommage ;
+- `@layer` et organisation explicite de la cascade ;
+- design tokens et thèmes (dont thème sombre) ;
+- accessibilité CSS (`:focus-visible`, contraste, `prefers-reduced-motion`) ;
+- performance CSS, debugging et `content-visibility` ;
+- maintenance et évolution d’un mini design system.
+
+Le Niveau 5 contient lui aussi **9 leçons, 36 exercices, 10 questions d’évaluation, 9 ateliers interactifs et 1 projet final** : **Dashboard professionnel thémable**.
+
+Au total, le parcours CSS comprend désormais :
+
+- **45 leçons** ;
+- **180 exercices** ;
+- **50 questions d’évaluation** ;
+- **5 projets**.
+
+## Correction — Révisions CSS complètes
+
+La page `#/css/revision` ne se limite plus aux quelques exercices marqués « à revoir » ni aux 12 premiers exercices incomplets. Elle centralise maintenant :
+
+- tous les exercices explicitement marqués à revoir ;
+- toutes les activités non maîtrisées, sans limite arbitraire ;
+- les notions fragiles calculées à partir des réussites/erreurs enregistrées ;
+- le meilleur score d’évaluation de chacun des 5 niveaux ;
+- l’état du projet de chaque niveau ;
+- une vue complète « par niveau » de ce qu’il reste à consolider.
+
+L’objectif est que l’onglet Révisions devienne une vraie vue de consolidation du parcours CSS complet.
+
+## Révisions React — vue complète
+
+La page **Révision React** n'est plus limitée aux exercices marqués « à revoir » ni aux 12 premiers exercices incomplets. Elle agrège désormais les 5 niveaux et affiche :
+
+- les exercices prioritaires marqués à revoir ;
+- les notions fragiles ayant enregistré des erreurs ;
+- les meilleurs scores d'évaluation de chaque niveau ;
+- l'état des 5 projets React ;
+- tous les exercices encore non maîtrisés, regroupés par niveau.
+
+Cette vue utilise la progression React existante (`state.react`) et ne modifie pas les données déjà enregistrées.
+
+## Parcours HTML — Niveau 1
+
+HTML est maintenant disponible comme quatrième parcours du hub. Le premier niveau est développé verticalement avant d'ajouter les niveaux suivants.
+
+Contenu du Niveau 1 :
+- 9 leçons : rôle de HTML, document complet, balises/attributs, titres/paragraphes, liens, images/alt, listes, commentaires, assemblage d'une page personnelle ;
+- 36 exercices, soit 4 par leçon ;
+- 9 ateliers HTML avec éditeur, preview live et navigateur sandboxé ;
+- visualisation pédagogique simplifiée du DOM et aide sur quelques erreurs de fermeture / imbrication ;
+- validation DOM/sémantique plutôt que comparaison exacte du texte ;
+- révision complète dès le premier livrable ;
+- page de sélection des projets dès le premier livrable ;
+- évaluation finale de 10 questions ;
+- projet final « Page de présentation personnelle ».
+
+La progression HTML vit dans `state.html` et reste indépendante des parcours JavaScript, React et CSS. Contrairement à une progression basée uniquement sur l'ouverture des cours, le niveau HTML prend aussi en compte la réussite des exercices, l'évaluation (seuil 80 %) et le projet.
+
+## HTML — Niveau 2 : structurer une vraie page
+
+Le parcours HTML contient maintenant deux niveaux complets. Le Niveau 2 ajoute les landmarks et éléments sémantiques (`header`, `nav`, `main`, `section`, `article`, `aside`, `footer`), le rôle de `div` / `span`, les ancres internes, `mailto:` / `tel:`, `figure` / `figcaption` et l’assemblage d’une page de blog cohérente.
+
+Le Niveau 2 contient **9 leçons, 36 exercices, 10 questions d’évaluation, 9 ateliers interactifs et 1 projet final** : **Page de blog structurée**. Les validations inspectent le DOM réellement rendu afin d’accepter plusieurs contenus différents lorsqu’ils respectent la structure et la sémantique demandées.
+
+Le dashboard HTML affiche maintenant dynamiquement les niveaux disponibles, les statistiques globales et les projets terminés. Les pages **Révisions** et **Projets** prennent automatiquement en compte les deux niveaux.
+
+## HTML — Niveau 3
+
+Le troisième niveau du parcours HTML est maintenant disponible et porte sur les **formulaires, tableaux et médias**. Il ajoute :
+
+- `form`, `label`, `input` et association `for` / `id` ;
+- types `email`, `password`, `number`, `date` ;
+- contraintes natives (`required`, `minlength`, `maxlength`, `min`, `max`) ;
+- `textarea`, `select` et `option` ;
+- checkbox, radio, `fieldset` et `legend` ;
+- boutons `submit` / `button` ;
+- tableaux `table`, `thead`, `tbody`, `tr`, `th`, `td` ;
+- `audio`, `video`, `source`, `track` ;
+- iframe avec `title` et introduction à `sandbox`.
+
+Le Niveau 3 contient **9 leçons, 36 exercices, 10 questions d’évaluation, 9 ateliers interactifs et 1 projet final** : une page événementielle combinant formulaire accessible, tableau de données, vidéo et iframe.
+
+Le parcours HTML totalise désormais **27 leçons, 108 exercices, 30 questions d’évaluation et 3 projets**.
+
+## HTML — Niveau 4 : sémantique & accessibilité
+
+Le quatrième niveau HTML est consacré à une structure robuste et accessible : landmarks, hiérarchie des titres, boutons vs liens, images accessibles, formulaires avec relations explicites, ARIA raisonné, langue du document, `hidden`, skip links et navigation clavier.
+
+Il ajoute 9 leçons, 36 exercices, 10 questions d’évaluation, 9 ateliers interactifs et le projet final **Page accessible et sémantique**. Les exercices continuent d’être validés via le DOM rendu plutôt que par comparaison textuelle stricte.
+
+## HTML — Niveau 5 : HTML professionnel & intégration
+
+Le parcours HTML est désormais complet sur **5 niveaux**. Le dernier niveau couvre :
+
+- métadonnées essentielles (`charset`, viewport, `title`, description) ;
+- SEO HTML de base et hiérarchie des contenus ;
+- Open Graph et favicon ;
+- chemins relatifs, racine et URLs absolues ;
+- organisation des fichiers et liaison d’une feuille CSS externe ;
+- chargement JavaScript avec `src`, `defer` et `type="module"` ;
+- performance de base des ressources (`width`, `height`, `loading="lazy"`) ;
+- validation et debugging structurel (ids uniques, relations label/champ, nesting) ;
+- audit final d’un document HTML professionnel.
+
+Le Niveau 5 contient **9 leçons, 36 exercices, 10 questions d’évaluation, 9 ateliers interactifs et 1 projet final** : **Structure complète d’un site professionnel**.
+
+Certains ateliers du Niveau 5 utilisent réellement plusieurs fichiers virtuels (`index.html`, `style.css`, `script.js`) dans le Lab partagé afin de montrer l’intégration HTML/CSS/JavaScript sans recréer un environnement parallèle.
+
+Au total, le parcours HTML contient maintenant :
+
+- **45 leçons** ;
+- **180 exercices** ;
+- **50 questions d’évaluation** ;
+- **45 ateliers interactifs** ;
+- **5 projets**.
+
+## Réorganisation des parcours et refonte des thèmes
+
+Le hub principal suit désormais l'ordre pédagogique **HTML → CSS → JavaScript → React**. L'ordre est explicite et ne dépend plus de l'ordre de chargement des fichiers.
+
+La palette du site a également été revue pour les deux thèmes : le mode sombre utilise des surfaces plus neutres et des accents plus lumineux, tandis que le mode clair dispose désormais de vraies surfaces claires, bordures, ombres et contrastes propres. Les boutons principaux adaptent leur couleur de texte à l'accent du parcours ; le CTA HTML a notamment été corrigé pour être nettement plus lisible en mode sombre.
