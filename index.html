@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr" data-theme="light">
+<html lang="fr" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cahier JS · apprendre JavaScript en pratiquant</title>
+  <title>Cahier Code · apprendre à coder en pratiquant</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -16,19 +16,20 @@
     <!-- Barre latérale : navigation et programme -->
     <aside class="sidebar" id="sidebar" aria-label="Navigation du site">
       <a class="brand" href="#/">
-        <span class="brand-mark" aria-hidden="true">JS</span>
-        <span>Cahier JS</span>
+        <span class="brand-mark" aria-hidden="true">&lt;/&gt;</span>
+        <span class="brand-label">Cahier Code</span>
       </a>
       <nav id="nav" aria-label="Pages et cours"></nav>
       <div class="sidebar-foot">
-        <button id="theme-toggle" class="btn ghost" type="button">Thème sombre</button>
+        <button id="sidebar-collapse" class="btn ghost sidebar-collapse" type="button" aria-label="Réduire la barre latérale">⇤ <span>Réduire</span></button>
+        <button id="theme-toggle" class="btn ghost" type="button">Thème clair</button>
       </div>
     </aside>
 
     <div class="content">
       <header class="topbar">
         <button id="menu-toggle" class="btn" type="button" aria-expanded="false" aria-controls="sidebar">Menu</button>
-        <span class="topbar-title">Cahier JS</span>
+        <span class="topbar-title">Cahier Code</span>
       </header>
       <!-- Ici, app.js dessine la page demandée -->
       <main id="main" tabindex="-1"></main>
@@ -42,9 +43,11 @@
   <script src="js/exercises.js"></script>
   <script src="js/projects.js"></script>
   <script src="js/progress.js"></script>
+  <script src="js/react-course.js"></script>
   <script src="js/editor.js"></script>
   <script src="js/lab.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/react-studio.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

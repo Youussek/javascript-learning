@@ -14,16 +14,42 @@ function emptyRecord() {
   return { attempts: 0, fails: 0, success: false, review: false, correctionSeen: false, points: 0 };
 }
 
+function isReactExerciseId(exerciseId) {
+  return /^rx-|^reval-/.test(String(exerciseId));
+}
+
+function ensureReactProgressStores() {
+  if (!state.react) state.react = { lessonsDone: {}, lastLesson: null, projects: {}, exercises: {}, notions: {}, evaluations: {} };
+  if (!state.react.exercises) state.react.exercises = {};
+  if (!state.react.notions) state.react.notions = {};
+  if (!state.react.evaluations) state.react.evaluations = {};
+}
+
+function exerciseStore(exerciseId) {
+  if (isReactExerciseId(exerciseId)) {
+    ensureReactProgressStores();
+    return state.react.exercises;
+  }
+  return state.exercises;
+}
+
 function getRecord(exerciseId) {
-  return state.exercises[exerciseId] || emptyRecord();
+  const store = exerciseStore(exerciseId);
+  return store[exerciseId] || emptyRecord();
 }
 
 function ensureRecord(exerciseId) {
-  if (!state.exercises[exerciseId]) state.exercises[exerciseId] = emptyRecord();
-  return state.exercises[exerciseId];
+  const store = exerciseStore(exerciseId);
+  if (!store[exerciseId]) store[exerciseId] = emptyRecord();
+  return store[exerciseId];
 }
 
-function ensureNotion(name) {
+function ensureNotion(name, path) {
+  if (path === "react") {
+    ensureReactProgressStores();
+    if (!state.react.notions[name]) state.react.notions[name] = { ok: 0, ko: 0 };
+    return state.react.notions[name];
+  }
   if (!state.notions[name]) state.notions[name] = { ok: 0, ko: 0 };
   return state.notions[name];
 }
@@ -42,7 +68,7 @@ function markLessonDone(lessonId) {
 // `session` décrit la tentative en cours : { fails, hints, correctionSeen }
 function recordResult(exercise, ok, session) {
   const record = ensureRecord(exercise.id);
-  const notion = ensureNotion(exercise.notion);
+  const notion = ensureNotion(exercise.notion, exercise.path);
   record.attempts++;
 
   if (!ok) {

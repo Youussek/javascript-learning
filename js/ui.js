@@ -138,7 +138,7 @@ function renderPlayground(code, options) {
 
 const TYPE_LABELS = {
   qcm: "QCM", vf: "Vrai ou faux", predict: "Prédire le résultat",
-  fill: "Compléter le code", code: "Écrire du code", lab: "Atelier page web",
+  fill: "Compléter le code", code: "Écrire du code", reactcode: "Atelier React", lab: "Atelier page web",
 };
 const DIFFICULTY_LABELS = { 1: "Facile", 2: "Moyen", 3: "Difficile" };
 const HINT_TITLES = ["aide légère", "la notion à utiliser", "une partie de la solution"];
@@ -271,6 +271,30 @@ function buildCodeBody(ex) {
   };
 }
 
+function buildReactCodeBody(ex) {
+  const editor = makeEditor(ex.starter || "", ex.rows || 14, null, "react");
+  const note = para("Validation structurelle : la plateforme analyse ton JSX/React sans prétendre exécuter un projet Vite complet.", "muted small");
+  return {
+    node: h("div", { class: "playground react-playground" }, editor, note, editorTips()),
+    reset() { editor.value = ex.starter || ""; },
+    lock() { editor.readOnly = true; },
+    async evaluate() {
+      const code = editor.value;
+      if (!code.trim() || code.trim() === String(ex.starter || "").trim()) {
+        return { invalid: true, message: "Modifie le code avant de valider." };
+      }
+      const problems = [];
+      for (const check of ex.checks || []) {
+        const ok = check.re ? new RegExp(check.re, check.flags || "").test(code) : true;
+        if (!ok) problems.push(check.msg || check.label || "Un critère n’est pas encore respecté.");
+      }
+      return problems.length === 0
+        ? { ok: true }
+        : { ok: false, message: "Ton code React n’est pas encore complet.", details: problems };
+    },
+  };
+}
+
 function buildLabBody(ex) {
   const lab = renderLab({ files: ex.files, previewHeight: ex.previewHeight, tips: true });
   return {
@@ -300,6 +324,7 @@ function buildBody(ex) {
   if (ex.type === "predict") return buildPredictBody(ex);
   if (ex.type === "fill") return buildFillBody(ex);
   if (ex.type === "lab") return buildLabBody(ex);
+  if (ex.type === "reactcode") return buildReactCodeBody(ex);
   return buildCodeBody(ex);
 }
 
@@ -317,6 +342,7 @@ function solutionNode(ex) {
   if (ex.type === "lab") {
     return h("div", {}, ex.solution.map((file) => h("div", {}, h("p", { class: "muted small" }, file.name), codeBlock(file.code))));
   }
+  if (ex.type === "reactcode") return codeBlock(ex.solution || "");
   return codeBlock(ex.solution);
 }
 

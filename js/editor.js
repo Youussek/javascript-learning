@@ -32,6 +32,14 @@ const SNIPPETS = [
   { label: "foreach", aliases: [], detail: "tableau.forEach(...)", text: "${1:tableau}.forEach((${2:element}) => {\n  $0\n});" },
 ];
 
+const REACT_SNIPPETS = [
+  { label: "rfc", aliases: ["component", "composant"], detail: "composant React fonctionnel", text: "export default function ${1:Component}() {\n  return (\n    <div>$0</div>\n  );\n}" },
+  { label: "us", aliases: ["state", "usestate"], detail: "useState", text: "const [${1:value}, ${2:setValue}] = useState(${3:0});$0" },
+  { label: "onclick", aliases: ["click"], detail: "événement onClick", text: "onClick={() => {\n  $0\n}}" },
+  { label: "prop", aliases: ["props"], detail: "expression JSX", text: "{${1:value}}$0" },
+  { label: "fragment", aliases: ["frag"], detail: "fragment React", text: "<>\n  $0\n</>" },
+];
+
 const KEYWORDS = ["break", "continue", "true", "false", "null", "undefined", "typeof", "new", "this", "async", "await", "try", "catch", "finally", "throw"];
 
 const GLOBALS = [
@@ -355,6 +363,7 @@ function computeSuggestions(code, pos, force, language) {
     KEYWORDS.forEach((k) => pool.push({ label: k, detail: "mot-clé", kind: "keyword", rank: 2 }));
     GLOBALS.forEach((g) => pool.push({ label: g.label, detail: g.detail, kind: "global", rank: 3 }));
     if (language === "js-browser") BROWSER_SNIPPETS.forEach((b) => pool.push({ label: b.label, aliases: b.aliases, detail: b.detail, text: b.text, kind: "snippet", rank: 0 }));
+    if (language === "react") REACT_SNIPPETS.forEach((b) => pool.push({ label: b.label, aliases: b.aliases, detail: b.detail, text: b.text, kind: "snippet", rank: 0 }));
     if (language === "js-browser") BROWSER_GLOBALS.forEach((g) => pool.push({ label: g.label, detail: g.detail, text: g.text, kind: "global", rank: 3 }));
   }
 

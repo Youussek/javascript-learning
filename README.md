@@ -82,3 +82,120 @@ Aucune autre modification n’est nécessaire : les pages se construisent à par
 - Si `localStorage` est bloqué par le navigateur (certains modes de navigation privée), la progression n’est pas conservée.
 - Dans l’atelier, `fetch` n’atteint pas Internet : il s’adresse à une API simulée (`https://api.cahierjs.test`). Pour essayer une vraie API, copie ton code dans tes propres fichiers (et vérifie que l’API autorise les appels depuis un navigateur, la règle CORS).
 - L’aperçu de l’atelier bloque `localStorage` : pour l’essayer, utilise tes propres fichiers.
+
+## Parcours React + Vite
+
+La plateforme est maintenant multi-parcours : l'accueil permet de choisir JavaScript ou React + Vite sans modifier le fonctionnement du parcours JavaScript.
+
+Le parcours React contient actuellement :
+
+- **Niveau 1 — Découvrir React** : React vs Vite, structure d'un projet Vite, JSX, composants, props, événements et `useState`.
+- **Niveau 2 — Fondamentaux React** : rendu conditionnel, listes et `key`, formulaires contrôlés, tableaux dans le state, communication entre composants et organisation d'une petite application.
+- **Projets React** : un projet par niveau est déclaré dans une roadmap commune. Les cinq projets sont désormais disponibles, du laboratoire de composants jusqu’à l’application React de production.
+- **Task Manager React** : atelier du niveau 2 avec brouillon sauvegardé localement et vérification structurelle des notions attendues. Le React Studio exécute désormais les notions du Niveau 1 ; les projets plus avancés continuent d'utiliser une validation structurelle lorsqu'ils dépassent les capacités du runtime pédagogique.
+
+Les données pédagogiques React et la roadmap de projets sont regroupées dans `js/react-course.js`. La progression React est enregistrée séparément dans `state.react` afin de ne pas interférer avec le parcours JavaScript.
+
+## Mise à jour React — Niveau 3
+
+Le niveau 3 « React intermédiaire » est désormais disponible avec :
+- useEffect et synchronisation avec l’extérieur ;
+- dépendances et cleanup ;
+- fetch et données distantes ;
+- états loading / error / vide ;
+- hooks personnalisés ;
+- Context API ;
+- routage d’une application Vite ;
+- débogage React / DevTools.
+
+Projet de fin de niveau : **API Explorer**, avec brouillon local et validation structurelle des principaux critères React.
+
+## React — Niveau 4 : React avancé
+
+Cette version ajoute le quatrième niveau du parcours React + Vite sans modifier la logique des niveaux précédents.
+
+Contenu ajouté :
+- architecture de composants à grande échelle ;
+- useRef ;
+- memo, useMemo et useCallback ;
+- gestion des erreurs et Error Boundaries ;
+- tests avec Vitest / React Testing Library ;
+- accessibilité ;
+- configuration Vite, alias et variables d'environnement ;
+- refactorisation progressive.
+
+Projet de fin de niveau : **Dashboard multi-pages** avec validation structurelle du routage, de la mémoïsation, de useRef, du rendu de listes, de l'accessibilité et de la présence de tests orientés utilisateur.
+
+## React — Niveau 5 : React professionnel
+
+Le parcours React est désormais complet sur ses cinq niveaux. Le dernier niveau ajoute :
+- React + TypeScript et typage des props/données ;
+- gestion des dépendances et `package.json` ;
+- tests d’intégration orientés utilisateur ;
+- états de chargement, erreurs et résilience ;
+- sécurité frontend et limites du code client ;
+- performance de production et chargement différé ;
+- build, preview et déploiement avec Vite ;
+- qualité, maintenance et évolution du projet.
+
+Projet final : **Application React de production**, avec validation structurelle de TypeScript, lazy/Suspense, récupération après erreur, rendu de liste, tests et commandes de build/preview. Le React Studio exécute les interactions fondamentales enseignées au Niveau 1. Le projet professionnel du Niveau 5 reste validé structurellement lorsqu'il mobilise TypeScript, lazy loading, outils de tests ou build réel, puis doit être confirmé dans un environnement React + Vite complet.
+
+## Enrichissement pédagogique React — Niveau 1
+
+Le niveau 1 React utilise désormais le moteur pédagogique de JavaScript : 24 exercices intégrés aux leçons, indices progressifs, corrections expliquées, révision, 10 questions d'évaluation et un projet final vérifiable. Voir `AUDIT-REACT-NIVEAU1.md` pour l'audit et la stratégie de migration de progression.
+
+
+## React Niveau 2 enrichi
+
+Le Niveau 2 — Fondamentaux React utilise maintenant le même moteur pédagogique enrichi que le Niveau 1 : 24 exercices (4 par leçon), indices progressifs, corrections expliquées, révision, évaluation finale de 10 questions et projet Task Manager renforcé. Voir `AUDIT-REACT-NIVEAU2.md`.
+
+## Enrichissement React — Niveau 3
+
+Le Niveau 3 React utilise désormais le même moteur pédagogique enrichi que les niveaux précédents :
+
+- 10 leçons intermédiaires ;
+- 40 exercices avec indices progressifs et corrections expliquées ;
+- une évaluation finale de 10 questions ;
+- un projet API Explorer renforcé avec 11 critères structurels ;
+- révision et progression compatibles avec les données existantes.
+
+Voir `AUDIT-REACT-NIVEAU3.md` pour le détail.
+
+## React Niveau 1 — environnement interactif
+
+Les six leçons du Niveau 1 possèdent maintenant un **React Studio** directement intégré au cours. Il reprend l’apparence et les conventions des ateliers JavaScript tout en ajoutant les besoins propres à React/Vite : terminal Vite simulé, système de fichiers virtuel, explorateur, éditeur multi-fichiers, navigateur, console et HMR pédagogique.
+
+Le terminal n’exécute jamais de commande système réelle : seules des commandes pédagogiques contrôlées sont reconnues. Le JSX du Niveau 1 est interprété dans une iframe sandboxée et permet d’observer réellement les composants, props, clics, `useState`, `console.log` et erreurs de syntaxe prises en charge par ce runtime pédagogique.
+
+Voir `AUDIT-INTERACTIVITE-REACT.md` pour les choix techniques, les limites et l’audit des niveaux suivants.
+
+## React Niveau 2 — interactivité
+
+Le Niveau 2 utilise désormais le React Studio dans ses 6 leçons : conditions, listes, formulaires contrôlés, tableaux dans le state, lifting state et organisation multi-fichiers. Le projet Task Manager possède également une preview réellement interactive en complément de sa validation structurelle.
+
+## React Niveau 3 interactif
+Le Niveau 3 utilise désormais React Studio pour useEffect, fetch/API, états asynchrones, hooks personnalisés, Context, routage, débogage, formulaires avancés, organisation multi-fichiers et le projet API Explorer. Les API réseau et le routage sont simulés de façon pédagogique dans l'iframe isolée lorsque le projet ne dispose pas d'un bundler React complet embarqué.
+
+## React Niveau 4 interactif
+
+Le Niveau 4 utilise désormais le React Studio pour architecture, useRef, mémoïsation, erreurs, tests, accessibilité, Vite avancé et refactorisation. Le projet Dashboard multi-pages possède lui aussi un atelier interactif. Voir `AUDIT-INTERACTIVITE-REACT-NIVEAU4.md`.
+
+## React Niveau 5 interactif
+
+Le dernier niveau utilise maintenant React Studio pour TypeScript, dépendances, tests d’intégration, résilience, sécurité, performance, build/déploiement et maintenance. Le projet final `Application React de production` est également disponible dans le studio avec tests, build et preview pédagogiques.
+
+## Mise à jour — React Niveau 4 : exercices avancés
+
+Le Niveau 4 contient maintenant 32 exercices (4 par leçon), une évaluation finale de 10 questions et des ateliers de code reliés au React Studio interactif. Les thèmes couverts sont l'architecture, useRef, la mémoïsation, la gestion des erreurs, les tests, l'accessibilité, Vite avancé et la refactorisation.
+
+## React — parcours pédagogique finalisé
+
+Le parcours React possède désormais des exercices et évaluations sur ses cinq niveaux :
+
+- Niveau 1 : 24 exercices / 10 questions
+- Niveau 2 : 24 exercices / 10 questions
+- Niveau 3 : 40 exercices / 10 questions
+- Niveau 4 : 32 exercices / 10 questions
+- Niveau 5 : 32 exercices / 10 questions
+
+Soit 152 exercices, 50 questions d’évaluation et 5 projets. Les ateliers pratiques avancés sont reliés au React Studio interactif lorsque la notion s’y prête.

@@ -8,11 +8,12 @@ const STORAGE_KEY = "cahierJS.v1";
 function defaultState() {
   return {
     version: 1,
-    theme: "light",
+    theme: "dark",
     lastLesson: null,   // dernier cours ouvert, ex. "variables"
     lessonsDone: {},    // cours terminés, ex. { variables: true }
     exercises: {},      // un dossier par exercice : { "var-1": { attempts, fails, success, review, correctionSeen, points } }
     notions: {},        // compteurs par notion : { "let et const": { ok: 3, ko: 1 } }
+    react: { lessonsDone: {}, lastLesson: null, projects: {}, exercises: {}, notions: {}, evaluations: {} }, // progression du parcours React
     projects: {},       // un dossier par projet : { steps: {0: true}, fails: 2, done: false, correctionSeen: false, draft: {...} }
   };
 }
