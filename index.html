@@ -23,8 +23,14 @@
       </a>
       <div id="path-switcher" class="sidebar-path-switcher"></div>
       <nav id="nav" aria-label="Pages et cours"></nav>
+      <div class="gamification-sidebar-links">
+        <a href="#/profil" class="btn ghost">★ <span>Profil & XP</span></a>
+        <a href="#/badges" class="btn ghost">🏆 <span>Badges</span></a>
+      </div>
       <div class="sidebar-foot">
         <button id="sidebar-collapse" class="btn ghost sidebar-collapse" type="button" aria-label="Réduire la barre latérale">⇤ <span>Réduire</span></button>
+        <button id="focus-mode-toggle" class="btn ghost focus-mode-toggle" type="button" aria-pressed="false"><span aria-hidden="true">◎</span> <span class="focus-mode-label">Mode focus</span></button>
+        <button id="beginner-mode-toggle" class="btn ghost learning-mode-toggle" type="button" aria-pressed="false"><span aria-hidden="true">◌</span> <span class="learning-mode-label">Mode débutant</span></button>
         <button id="theme-toggle" class="btn ghost" type="button">Thème clair</button>
       </div>
     </aside>
@@ -33,7 +39,12 @@
       <header class="topbar">
         <button id="menu-toggle" class="btn" type="button" aria-expanded="false" aria-controls="sidebar">Menu</button>
         <span class="topbar-title" id="topbar-title">Cahier Code</span>
-        <a id="topbar-paths" class="topbar-paths" href="#/">Choisir un parcours</a>
+        <div class="topbar-actions">
+          <div id="gamification-mini" class="gamification-mini"></div>
+          <button id="focus-mode-toggle-mobile" class="topbar-learning-mode topbar-focus-mode" type="button" aria-pressed="false"><span class="focus-mode-label">Focus</span></button>
+          <button id="beginner-mode-toggle-mobile" class="topbar-learning-mode" type="button" aria-pressed="false"><span class="learning-mode-label">Mode débutant</span></button>
+          <a id="topbar-paths" class="topbar-paths" href="#/">Choisir un parcours</a>
+        </div>
       </header>
       <!-- Ici, app.js dessine la page demandée -->
       <main id="main" tabindex="-1"></main>
@@ -64,6 +75,8 @@
   <script src="js/html-level4.js"></script>
   <script src="js/html-level5.js"></script>
   <script src="js/code-help.js"></script>
+  <script src="js/beginner-mode.js"></script>
+  <script src="js/focus-mode.js"></script>
   <script src="js/editor.js"></script>
   <script src="js/lab.js"></script>
   <script src="js/ui.js"></script>
@@ -84,6 +97,12 @@
   <script src="js/sql-level5.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/sql-asm.js"></script>
   <script src="js/sql-studio.js"></script>
+  <script src="js/spaced-review.js"></script>
+  <script src="js/error-history.js"></script>
+  <script src="js/frequent-errors.js"></script>
+  <script src="js/explain-alt.js"></script>
+  <script src="js/glossary.js"></script>
+  <script src="js/gamification.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

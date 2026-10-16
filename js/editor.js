@@ -580,6 +580,9 @@ function getSuggestEl() {
 const KIND_ICONS = { snippet: "‹›", function: "ƒ", variable: "x", keyword: "k", global: "◆", member: "m" };
 
 function enhanceEditor(editor, onRun, language) {
+  // Tous les éditeurs utilisant le moteur commun profitent aussi de l’aide contextuelle.
+  // Cela couvre les Labs HTML/CSS/JS/React/TS/Node et l’éditeur SQL sans duplication.
+  if (typeof attachEditorCodeHelp === "function") attachEditorCodeHelp(editor, language || "");
   let items = [];
   let active = 0;
   let replaceStart = 0;

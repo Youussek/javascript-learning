@@ -55,7 +55,7 @@ function demo(item) {
 
 // ─── Barre latérale ───
 function navIcon(name) {
-  const icons = { home:"⌂", paths:"◇", dashboard:"◎", book:"▤", exercise:"✓", review:"↻", project:"◈", progress:"◎", react:"⚛", css:"CSS", html:"HTML", ts:"TS", node:"N", sql:"SQL", js:"JS", back:"←" };
+  const icons = { home:"⌂", paths:"◇", dashboard:"◎", book:"▤", exercise:"✓", review:"↻", error:"!", trend:"↗", glossary:"Aa", project:"◈", progress:"◎", react:"⚛", css:"CSS", html:"HTML", ts:"TS", node:"N", sql:"SQL", js:"JS", back:"←" };
   return h("span", { class:"nav-icon", "aria-hidden":"true" }, icons[name] || "•");
 }
 
@@ -114,7 +114,7 @@ function renderGlobalPathSwitcher(path) {
 function renderNav() {
   const nav = document.getElementById("nav");
   const path = location.hash.replace(/^#/, "") || "/";
-  const isGlobal = path === "/" || path === "/dashboard";
+  const isGlobal = path === "/" || path === "/dashboard" || path === "/revisions" || path === "/erreurs" || path === "/erreurs-frequentes" || path === "/glossaire" || path.startsWith("/glossaire/");
   const inReact = path.startsWith("/react");
   const inCss = path.startsWith("/css");
   const inHtml = path.startsWith("/html");
@@ -129,6 +129,10 @@ function renderNav() {
   const items = isGlobal ? [
     { href: "/", text: "Accueil", icon:"home", prefix:null },
     { href: "/dashboard", text: "Mes parcours", icon:"dashboard", exact:true, prefix:"/dashboard" },
+    { href: "/revisions", text: "Révisions du jour", icon:"review", exact:true, prefix:"/revisions" },
+    { href: "/erreurs", text: "Mes erreurs utiles", icon:"error", exact:true, prefix:"/erreurs" },
+    { href: "/erreurs-frequentes", text: "Mes tendances", icon:"trend", exact:true, prefix:"/erreurs-frequentes" },
+    { href: "/glossaire", text: "Glossaire", icon:"glossary", exact:true, prefix:"/glossaire" },
   ] : inReact ? [
     { href: "/", text: "Parcours", icon:"back", prefix: null },
     { href: "/react", text: "Vue d’ensemble", icon:"react", prefix: "/react" },
@@ -174,6 +178,10 @@ function renderNav() {
     { href: "/projets", text: "Projets", icon:"project", prefix: "/projet" },
     { href: "/progression", text: "Progression", icon:"progress", prefix: "/progression" },
   ];
+  if (!isGlobal) {
+    items.push({ href: "/glossaire", text: "Glossaire", icon:"glossary", exact:true, prefix:"/glossaire" });
+    items.splice(1, 0, { href: "/revisions", text: "Révisions du jour", icon:"review", exact:true, prefix:"/revisions" }, { href: "/erreurs", text: "Mes erreurs utiles", icon:"error", exact:true, prefix:"/erreurs" }, { href: "/erreurs-frequentes", text: "Mes tendances", icon:"trend", exact:true, prefix:"/erreurs-frequentes" });
+  }
   const mainLinks = items.map((item) => {
     const active = item.prefix === null ? path === item.href : item.exact ? path === item.href : (item.href === "/react" ? path === "/react" : item.href === "/css" ? path === "/css" : item.href === "/html" ? path === "/html" : item.href === "/typescript" ? path === "/typescript" : item.href === "/node" ? path === "/node" : item.href === "/sql" ? path === "/sql" : item.href === "/javascript" ? path === "/javascript" : path.startsWith(item.prefix));
     return h("a", { href: "#" + item.href, class: "nav-link", "aria-current": active ? "page" : null, title:item.text }, navIcon(item.icon), h("span",{class:"nav-label"},item.text));
@@ -183,7 +191,10 @@ function renderNav() {
       h("p",{class:"nav-heading"},"ACCÈS RAPIDE"),
       h("div",{class:"nav-main"},
         h("a",{href:"#/",class:"nav-link"},navIcon("paths"),h("span",{class:"nav-label"},"Tous les parcours")),
-        h("a",{href:"#/dashboard",class:"nav-link"},navIcon("progress"),h("span",{class:"nav-label"},"Progression globale"))
+        h("a",{href:"#/dashboard",class:"nav-link"},navIcon("progress"),h("span",{class:"nav-label"},"Progression globale")),
+        h("a",{href:"#/revisions",class:"nav-link"},navIcon("review"),h("span",{class:"nav-label"},"Révisions espacées")),
+        h("a",{href:"#/erreurs",class:"nav-link"},navIcon("error"),h("span",{class:"nav-label"},"Mes erreurs utiles")),
+        h("a",{href:"#/erreurs-frequentes",class:"nav-link"},navIcon("trend"),h("span",{class:"nav-label"},"Mes tendances"))
       ));
     return;
   }
@@ -373,17 +384,352 @@ function renderHub() {
       h("div",{class:"path-grid path-grid-v2"},paths.map(p=>renderLearningPathCard(p)))));
 }
 
+
+
+// ═══════════ Gamification globale ═══════════
+function gamificationProgressBar(percent){return bar(Math.max(0,Math.min(100,Number(percent)||0)));}
+function gamificationDashboardWidget(){
+  const s=gamificationStats();
+  return h("section",{class:"gamification-dashboard-card"},
+    h("div",{class:"gamification-dashboard-main"},
+      h("div",{},h("span",{class:"eyebrow"},"PROGRESSION PERSONNELLE"),h("div",{class:"gamification-level-line"},h("h2",{},"Niveau "+s.level),h("strong",{},s.totalXp+" XP")),gamificationProgressBar(s.percent),para(s.remaining+" XP avant le niveau "+(s.level+1),"muted small")),
+      h("div",{class:"gamification-quick-stats"},metric("🔥 "+s.currentStreak,"jours de streak"),metric("🎯 "+s.today.xp+" / "+s.today.target,"XP aujourd’hui"),metric("🏆 "+s.badgesUnlocked,"badges"))),
+    h("div",{class:"gamification-dashboard-actions"},link("/profil","Voir mon profil","btn primary"),link("/badges","Voir les badges","btn")));
+}
+
+function gamificationFormatDate(ts){return ts?new Intl.DateTimeFormat("fr-FR",{day:"numeric",month:"short",year:"numeric"}).format(new Date(Number(ts))):"";}
+function gamificationEventLabel(event){const labels={lesson:"Leçon terminée",exercise:"Exercice réussi",firstTry:"Bonus premier essai",learningLevel:"Niveau pédagogique terminé",evaluation:"Évaluation réussie",project:"Projet terminé",dailyBonus:"Bonus quotidien"};return labels[event.type]||event.title||event.type;}
+function gamificationRarityClass(rarity){return "rarity-"+String(rarity||"commun").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g,"-");}
+
+function renderGamificationProfile(){
+  const s=gamificationStats();
+  const g=ensureGamificationState();
+  const today=s.today;
+  const byPath=gamificationXpByPath();
+  const activity=gamificationActivityDays(35);
+  const events=gamificationRecentXp(14);
+  const badges=gamificationBadgeRows().filter(b=>b.unlocked).slice(0,6);
+  const goalButtons=Object.entries(GAMIFICATION_CONFIG.dailyGoals).map(([id,value])=>
+    h("button",{
+      class:"btn small "+(g.dailyGoal===id?"primary":""),
+      type:"button",
+      "aria-pressed":g.dailyGoal===id?"true":"false",
+      onclick:()=>{gamificationSetDailyGoal(id);router();}
+    },id==="light"?"Léger · "+value+" XP":id==="normal"?"Normal · "+value+" XP":"Intensif · "+value+" XP")
+  );
+  return h("div",{class:"page gamification-profile-page"},
+    h("p",{class:"crumbs"},link("/","Accueil")," / Profil"),
+    h("section",{class:"gamification-profile-hero"},
+      h("div",{},
+        h("span",{class:"eyebrow"},"PROFIL GLOBAL"),
+        h("h1",{},"Niveau "+s.level),
+        para("Ta progression personnelle additionne tes efforts sur tous les parcours sans remplacer tes compétences pédagogiques.","lead"),
+        h("div",{class:"gamification-xp-big"},h("strong",{},s.totalXp+" XP"),h("span",{},s.remaining+" XP avant le niveau "+(s.level+1))),
+        gamificationProgressBar(s.percent)
+      ),
+      h("div",{class:"gamification-profile-orbit"},
+        metric("🔥 "+s.currentStreak,"streak actuel"),
+        metric(s.longestStreak,"record"),
+        metric(s.badgesUnlocked+" / "+s.badgesTotal,"badges"),
+        metric(s.weekXp,"XP sur 7 jours")
+      )
+    ),
+    h("section",{class:"gamification-goal-card"},
+      h("div",{},
+        h("span",{class:"eyebrow"},"OBJECTIF QUOTIDIEN"),
+        h("h2",{},today.done?"✓ Objectif du jour terminé":today.xp+" / "+today.target+" XP"),
+        gamificationProgressBar(today.percent),
+        para(today.done?"Tout XP supplémentaire aujourd’hui est du bonus.":"Une session raisonnable suffit : une leçon et quelques exercices peuvent atteindre l’objectif.","muted")
+      ),
+      h("div",{class:"gamification-goal-choice"},h("span",{class:"muted small"},"Rythme"),h("div",{class:"toolbar"},goalButtons))
+    ),
+    h("section",{class:"block"},
+      h("div",{class:"section-heading"},h("div",{},h("span",{class:"eyebrow"},"ACTIVITÉ"),h("h2",{},"Tes 35 derniers jours")),para("Une case active représente une vraie action pédagogique, pas une simple ouverture du site.","muted")),
+      h("div",{class:"gamification-calendar","aria-label":"Calendrier d’activité"},activity.map(day=>h("span",{
+        class:"activity-day "+(day.xp>=80?"level-4":day.xp>=40?"level-3":day.xp>=20?"level-2":day.xp>0?"level-1":""),
+        title:day.key+" · "+day.xp+" XP",
+        "aria-label":day.key+" : "+day.xp+" XP"
+      })))
+    ),
+    h("section",{class:"block"},
+      h("div",{class:"section-heading"},h("div",{},h("span",{class:"eyebrow"},"XP PAR PARCOURS"),h("h2",{},"Où tu progresses")),para("L’XP reste global ; cette vue est seulement statistique.","muted")),
+      h("div",{class:"gamification-path-xp-grid"},orderedLearningPaths().map(p=>
+        h("article",{class:"gamification-path-xp path-card--"+p.id},
+          h("span",{class:"path-mark","aria-hidden":"true"},p.mark),
+          h("div",{},h("strong",{},p.title),para((byPath[p.id]||0)+" XP","muted small"))
+        )
+      ))
+    ),
+    h("section",{class:"block"},
+      h("div",{class:"section-heading"},h("div",{},h("span",{class:"eyebrow"},"BADGES RÉCENTS"),h("h2",{},badges.length?badges.length+" à afficher":"Premiers badges à débloquer")),link("/badges","Tous les badges →","btn small")),
+      badges.length
+        ? h("div",{class:"gamification-badge-mini-grid"},badges.map(b=>h("article",{class:"badge-mini "+gamificationRarityClass(b.rarity)},h("span",{class:"badge-icon"},b.icon),h("div",{},h("strong",{},b.title),para(b.description,"muted small")))))
+        : para("Termine une première leçon ou un exercice pour débloquer tes premiers badges.","muted")
+    ),
+    h("section",{class:"block"},
+      h("div",{class:"section-heading"},h("div",{},h("span",{class:"eyebrow"},"JOURNAL XP"),h("h2",{},"Activité récente")),para("Le journal permet aussi de vérifier qu’une récompense n’est attribuée qu’une seule fois.","muted")),
+      events.length
+        ? h("ul",{class:"rows compact gamification-xp-log"},events.map(e=>h("li",{class:"row"},
+            h("div",{class:"row-main"},h("strong",{},e.title||gamificationEventLabel(e)),para((e.path?(GAMIFICATION_PATH_META[e.path]?.title||e.path)+" · ":"")+gamificationFormatDate(e.at)+(e.backfill?" · progression antérieure":""),"muted small")),
+            h("span",{class:"xp-pill"},"+"+e.xp+" XP")
+          )))
+        : para("Aucun gain XP pour le moment.","muted")
+    )
+  );
+}
+
+function renderGamificationBadges(){
+  const rows=gamificationBadgeRows();
+  const unlocked=rows.filter(b=>b.unlocked).length;
+  const page=h("div",{class:"page badges-page"},
+    h("p",{class:"crumbs"},link("/","Accueil")," / Badges"),
+    pageTitle("Badges",unlocked+" badge"+(unlocked>1?"s":"")+" obtenu"+(unlocked>1?"s":"")+" sur "+rows.length+". Les badges récompensent de vraies réussites et restent purement personnels.")
+  );
+  const controls=h("div",{class:"badge-filter toolbar"});
+  const categories=["Tous",...new Set(rows.map(b=>b.category))];
+  const grid=h("section",{class:"gamification-badge-grid","aria-live":"polite"});
+  function draw(category){
+    const cards=rows
+      .filter(b=>category==="Tous"||b.category===category)
+      .map(b=>h("article",{class:"gamification-badge-card "+(b.unlocked?"unlocked ":"locked ")+gamificationRarityClass(b.rarity)},
+        h("div",{class:"badge-card-head"},
+          h("span",{class:"badge-icon"},b.unlocked?b.icon:"🔒"),
+          h("span",{class:"badge-rarity"},b.rarity)
+        ),
+        h("h3",{},b.title),
+        para(b.description,"muted"),
+        b.unlocked
+          ? h("div",{class:"badge-unlocked"},h("strong",{},"✓ Obtenu"),para(gamificationFormatDate(b.unlockedAt),"muted small"))
+          : h("div",{class:"badge-progress"},gamificationProgressBar(b.percent),para(Math.min(b.value,b.target)+" / "+b.target,"muted small"))
+      ));
+    grid.replaceChildren(...cards);
+  }
+  categories.forEach((cat,index)=>controls.append(
+    h("button",{class:"btn small "+(index===0?"primary":""),type:"button",onclick:(e)=>{
+      controls.querySelectorAll("button").forEach(x=>x.classList.remove("primary"));
+      e.currentTarget.classList.add("primary");
+      draw(cat);
+    }},cat)
+  ));
+  draw("Tous");
+  page.append(controls,grid);
+  return page;
+}
+
 function renderGlobalDashboard(){
   const paths=allLearningPathSummaries();
   const started=paths.filter(p=>p.started);
   const completed=paths.filter(p=>p.percent>=100).length;
   const overall=started.length?Math.round(started.reduce((n,p)=>n+p.percent,0)/started.length):0;
+  const reviewStats=spacedReviewStats();
   return h("div",{class:"page global-dashboard"},
     h("p",{class:"crumbs"},link("/","Accueil")," / Mes parcours"),
     h("section",{class:"global-dashboard-hero"},
       h("div",{},h("span",{class:"eyebrow"},"DASHBOARD GLOBAL"),h("h1",{},started.length?"Continue ton apprentissage":"Ton apprentissage commence ici"),para(started.length?"Retrouve chaque progression sans qu'un parcours prenne la priorité sur les autres.":"Tu n'as encore commencé aucun parcours. Choisis celui qui t'intéresse : ta progression sera enregistrée séparément.","lead")),
       h("div",{class:"global-dashboard-stats"},metric(started.length,"parcours commencés"),metric(completed,"terminés"),metric(overall+" %","moyenne"))),
+    gamificationDashboardWidget(),
+    h("section",{class:"dashboard-review-strip "+(reviewStats.dueCount?"has-due":"clear")},
+      h("div",{},h("span",{class:"eyebrow"},"RÉVISION ESPACÉE"),h("h2",{},reviewStats.dueCount?reviewStats.dueCount+" rappel"+(reviewStats.dueCount>1?"s":"")+" à faire aujourd’hui":"Mémoire à jour"),para(reviewStats.dueCount?"Une session courte est prête à partir de tes erreurs et de tes anciennes réussites.":"Tes prochaines échéances apparaîtront ici automatiquement.","muted")),
+      h("div",{class:"dashboard-review-actions"},reviewStats.dueCount?link("/revisions","Réviser maintenant →","btn primary"):link("/revisions","Voir le planning","btn"))),
+    h("section",{class:"dashboard-error-strip"},
+      h("div",{},h("span",{class:"eyebrow"},"MES ERREURS UTILES"),h("h2",{},errorHistoryStats().open.length?errorHistoryStats().open.length+" erreur"+(errorHistoryStats().open.length>1?"s":"")+" à comprendre":"Aucune erreur en attente"),para(errorHistoryStats().open.length?"Retrouve tes tentatives ratées et les notions qui reviennent le plus souvent.":"Les prochaines validations incorrectes seront conservées ici pour t’aider à progresser.","muted")),
+      h("div",{class:"dashboard-review-actions"},link("/erreurs",errorHistoryStats().open.length?"Voir mes erreurs →":"Ouvrir l’historique","btn"))),
+    h("section",{class:"dashboard-pattern-strip"},
+      h("div",{},h("span",{class:"eyebrow"},"TENDANCES PERSONNALISÉES"),h("h2",{},frequentErrorGlobalStats().active.length?frequentErrorGlobalStats().active.length+" schéma"+(frequentErrorGlobalStats().active.length>1?"s":"")+" récurrent"+(frequentErrorGlobalStats().active.length>1?"s":"")+" détecté"+(frequentErrorGlobalStats().active.length>1?"s":""):"Pas encore de tendance fiable"),para(frequentErrorGlobalStats().active.length?"Le site regroupe tes erreurs répétées pour repérer les réflexes à renforcer.":"Il faut plusieurs erreurs similaires avant qu’une tendance soit affichée, pour éviter les faux diagnostics.","muted")),
+      h("div",{class:"dashboard-review-actions"},link("/erreurs-frequentes",frequentErrorGlobalStats().active.length?"Voir mes tendances →":"Comment ça fonctionne ?","btn"))),
     started.length?h("section",{class:"block"},h("div",{class:"section-heading"},h("div",{},h("span",{class:"eyebrow"},"MES PARCOURS"),h("h2",{},"Reprendre exactement où tu t'es arrêté")),link("/","Découvrir un autre parcours →","btn small")),h("div",{class:"dashboard-path-list"},started.map(p=>h("article",{class:"dashboard-path-row path-card--"+p.id},h("span",{class:"path-mark","aria-hidden":"true"},p.mark),h("div",{class:"dashboard-path-copy"},h("div",{class:"dashboard-path-heading"},h("h3",{},p.title),h("strong",{},p.percent+" %")),p.lastLesson?para("Dernière leçon · "+p.lastLesson.title,"muted small"):para("Niveau "+p.currentLevel+" / "+p.levels,"muted small"),bar(p.percent)),h("div",{class:"dashboard-path-actions"},link(p.resumeHref,"Continuer","btn primary small"),link(p.href,"Vue d'ensemble","btn small")))))):h("section",{class:"empty-dashboard"},h("h2",{},"Choisis ton premier parcours"),para("Tous les langages restent visibles sur l'accueil. Rien n'est sélectionné automatiquement.","muted"),link("/","Voir les parcours →","btn primary big")));
+}
+
+
+function formatReviewDate(timestamp) {
+  if (!timestamp) return "Non planifiée";
+  const date=new Date(Number(timestamp));
+  const today=new Date();
+  const tomorrow=new Date(); tomorrow.setDate(today.getDate()+1);
+  const sameDay=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
+  if(sameDay(date,today)) return "Aujourd’hui";
+  if(sameDay(date,tomorrow)) return "Demain";
+  return new Intl.DateTimeFormat("fr-FR",{day:"numeric",month:"short"}).format(date);
+}
+
+function renderSpacedReviewCard(item) {
+  const rec=item.record;
+  return h("article",{class:"spaced-review-card path-card--"+item.path.id},
+    h("div",{class:"spaced-review-card-head"},
+      h("span",{class:"path-mark","aria-hidden":"true"},item.path.mark),
+      h("div",{},h("span",{class:"eyebrow"},item.path.title),h("h3",{},item.exercise.notion))),
+    para(spacedReviewReason(item),"muted small"),
+    h("div",{class:"spaced-review-meta"},
+      h("span",{},"Erreurs : ",h("strong",{},String(rec.fails||0))),
+      h("span",{},"Série : ",h("strong",{},String(rec.reviewStreak||0))),
+      h("span",{},"Intervalle : ",h("strong",{},spacedReviewIntervalLabel(rec)))),
+    link(item.path.href(item.exercise.id),"Réviser maintenant →","btn primary small"));
+}
+
+function renderSpacedReviews() {
+  const stats=spacedReviewStats();
+  const queue=spacedReviewQueue(6);
+  const upcoming=stats.upcoming.slice(0,8);
+  const first=queue[0];
+  return h("div",{class:"page spaced-review-page"},
+    h("p",{class:"crumbs"},link("/","Accueil")," / Révisions du jour"),
+    h("section",{class:"spaced-review-hero"},
+      h("div",{},h("span",{class:"eyebrow"},"RÉVISION ESPACÉE INTELLIGENTE"),h("h1",{},stats.dueCount?"Ta mémoire a "+stats.dueCount+" rappel"+(stats.dueCount>1?"s":"")+" pour toi":"Rien d’urgent aujourd’hui"),para(stats.dueCount?"Une courte session mélange les parcours et fait revenir les notions au moment où elles risquent d’être oubliées.":"Continue à pratiquer : les exercices réussis seront reproposés automatiquement après 3, 7, 14, 30 puis 60 jours.","lead"),first?h("div",{class:"toolbar"},link(first.path.href(first.exercise.id),"Commencer ma session →","btn primary big"),link("/dashboard","Voir ma progression","btn big")):h("div",{class:"toolbar"},link("/","Choisir un parcours","btn primary big"),link("/dashboard","Voir ma progression","btn big"))),
+      h("div",{class:"spaced-review-orbit"},metric(stats.dueCount,"à réviser"),metric(stats.upcomingCount,"dans les 7 jours"),metric(stats.scheduled,"planifiées"))),
+    h("section",{class:"dashboard-grid spaced-review-stats"},
+      h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"SESSION COURTE"),h("h2",{},Math.min(queue.length,6)),para("exercices sélectionnés · environ 5 à 10 min","muted")),
+      h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"RYTHME"),h("h2",{},"3 → 60 j"),para("l’intervalle augmente quand tu réussis sans aide","muted")),
+      h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"ADAPTATIF"),h("h2",{},"↻"),para("une erreur ou une correction rapproche la prochaine révision","muted"))),
+    h("section",{class:"block"},
+      h("div",{class:"section-heading"},h("div",{},h("span",{class:"eyebrow"},"SESSION DU JOUR"),h("h2",{},"À revoir maintenant")),para("La sélection mélange les parcours quand plusieurs technologies sont dues.","muted")),
+      queue.length?h("div",{class:"spaced-review-grid"},queue.map(renderSpacedReviewCard)):empty("Aucune notion n'est due pour le moment. Les prochaines révisions apparaîtront ici automatiquement.")),
+    h("section",{class:"block"},
+      h("div",{class:"section-heading"},h("div",{},h("span",{class:"eyebrow"},"PROCHAINEMENT"),h("h2",{},"Les 7 prochains jours")),para("Ce planning se recalcule après chaque tentative.","muted")),
+      upcoming.length?h("ul",{class:"rows compact"},upcoming.map(item=>h("li",{class:"row"},h("span",{class:"path-mark mini path-card--"+item.path.id,"aria-hidden":"true"},item.path.mark),h("div",{class:"row-main"},h("strong",{},item.exercise.notion),para(item.path.title+" · "+formatReviewDate(item.record.reviewDueAt),"muted small")),h("span",{class:"status todo"},spacedReviewIntervalLabel(item.record))))):empty("Aucune échéance supplémentaire dans les 7 prochains jours.")),
+    h("section",{class:"callout spaced-review-how"},h("strong",{},"Comment le planning décide ?"),para("Échec : retour rapproché. Réussite avec aide ou correction : environ 1 jour. Réussite propre : l’intervalle progresse vers 3, 7, 14, 30 puis 60 jours. Tout est enregistré dans la progression de l’exercice, sans système parallèle.","muted")));
+}
+
+
+function formatErrorHistoryDate(timestamp) {
+  if (!timestamp) return "";
+  return new Intl.DateTimeFormat("fr-FR", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" }).format(new Date(Number(timestamp)));
+}
+
+function renderUsefulErrorCard(entry) {
+  const path=ERROR_HISTORY_PATHS[entry.path] || ERROR_HISTORY_PATHS.javascript;
+  const repeated=Math.max(1,Number(entry.repeatCount)||1);
+  const resolved=Boolean(entry.resolvedAt);
+  const card=h("article",{class:"useful-error-card path-card--"+entry.path+(resolved?" resolved":" open"),"data-error-id":entry.id},
+    h("div",{class:"useful-error-head"},
+      h("span",{class:"path-mark","aria-hidden":"true"},path.mark),
+      h("div",{class:"useful-error-title"},h("span",{class:"eyebrow"},path.title),h("h3",{},entry.notion)),
+      h("span",{class:"status "+(resolved?"ok":"review")},resolved?"✓ Résolue":"! À corriger")),
+    entry.question?para(entry.question,"muted small useful-error-question"):null,
+    h("div",{class:"useful-error-meta"},
+      h("span",{},"Rencontrée ",h("strong",{},String(repeated))," fois"),
+      h("span",{},formatErrorHistoryDate(entry.lastSeenAt||entry.createdAt)),
+      entry.correctionSeen?h("span",{},"Correction consultée"):null),
+    h("div",{class:"useful-error-diagnostic"},h("strong",{},"Ce qui bloquait"),para(entry.message)),
+    entry.details&&entry.details.length?h("ul",{class:"useful-error-details"},entry.details.map(line=>h("li",{html:rich(line)}))):null,
+    entry.attempt?h("details",{class:"useful-error-attempt"},h("summary",{},"Voir ma tentative"),h("pre",{class:"code"},entry.attempt)):null,
+    entry.correctionSeen&&entry.explanation?h("details",{class:"useful-error-learning"},h("summary",{},"Ce qu’il fallait retenir"),para(entry.explanation),entry.solution?h("div",{},h("strong",{},"Solution de référence"),codeBlock(entry.solution,true)):null):null,
+    resolved?h("div",{class:"useful-error-resolved"},h("strong",{},entry.resolvedWithHelp?"Résolue avec aide":"Résolue sans aide"),para("Le "+formatErrorHistoryDate(entry.resolvedAt),"muted small")):null,
+    h("div",{class:"toolbar"},
+      link(path.href(entry.exerciseId),resolved?"Refaire pour consolider":"Refaire l’exercice","btn primary small"),
+      h("button",{class:"btn ghost small",type:"button",onclick:()=>{if(removeUsefulError(entry.id)) router();}},"Retirer de l’historique"))
+  );
+  return card;
+}
+
+function renderUsefulErrors() {
+  const stats=errorHistoryStats();
+  const page=h("div",{class:"page useful-errors-page"},
+    h("p",{class:"crumbs"},link("/","Accueil")," / Mes erreurs utiles"),
+    h("section",{class:"useful-errors-hero"},
+      h("div",{},h("span",{class:"eyebrow"},"APPRENDRE DE SES ERREURS"),h("h1",{},stats.all.length?"Tes erreurs deviennent une ressource":"Aucune erreur enregistrée pour le moment"),para(stats.all.length?"Retrouve les pièges que tu as réellement rencontrés, comprends ce qui bloquait et vérifie qu’ils ne reviennent plus.":"Les erreurs apparaîtront ici uniquement après une validation incorrecte dans un exercice.","lead")),
+      h("div",{class:"useful-errors-stats"},metric(stats.open.length,"à corriger"),metric(stats.resolved.length,"résolues"),metric(stats.repeated.length,"récurrentes"))),
+    stats.topNotion?h("section",{class:"callout useful-errors-insight"},h("strong",{},"Piège le plus fréquent · "+stats.topNotion[0]),para(stats.topNotion[1]+" occurrence"+(stats.topNotion[1]>1?"s":"")+" enregistrée"+(stats.topNotion[1]>1?"s":"")+". Ce n’est pas un score négatif : c’est une priorité de révision.","muted")):null
+  );
+
+  const controls=h("section",{class:"useful-errors-controls","aria-label":"Filtres de l’historique"});
+  const statusSelect=h("select",{"aria-label":"Filtrer par statut"},
+    h("option",{value:"open"},"À corriger"),h("option",{value:"all"},"Toutes"),h("option",{value:"resolved"},"Résolues"),h("option",{value:"repeated"},"Récurrentes"));
+  const pathSelect=h("select",{"aria-label":"Filtrer par parcours"},h("option",{value:"all"},"Tous les parcours"),Object.entries(ERROR_HISTORY_PATHS).map(([id,meta])=>h("option",{value:id},meta.title)));
+  const resultCount=h("span",{class:"muted small useful-errors-count"});
+  const list=h("section",{class:"useful-errors-grid","aria-live":"polite"});
+
+  function refresh() {
+    let entries=errorHistoryEntries();
+    const status=statusSelect.value;
+    const path=pathSelect.value;
+    if(status==="open") entries=entries.filter(x=>!x.resolvedAt);
+    if(status==="resolved") entries=entries.filter(x=>x.resolvedAt);
+    if(status==="repeated") entries=entries.filter(x=>(Number(x.repeatCount)||1)>=2);
+    if(path!=="all") entries=entries.filter(x=>x.path===path);
+    resultCount.textContent=entries.length+" erreur"+(entries.length>1?"s":"")+" affichée"+(entries.length>1?"s":"");
+    list.replaceChildren(...(entries.length?entries.map(renderUsefulErrorCard):[empty(status==="open"?"Aucune erreur non résolue. Continue à pratiquer : les prochaines erreurs utiles apparaîtront ici.":"Aucune erreur ne correspond à ce filtre.")]));
+  }
+  statusSelect.addEventListener("change",refresh);
+  pathSelect.addEventListener("change",refresh);
+  controls.append(statusSelect,pathSelect,resultCount);
+  if(stats.resolved.length) controls.append(h("button",{class:"btn ghost small",type:"button",onclick:()=>{clearResolvedUsefulErrors();router();}},"Effacer les erreurs résolues"));
+  page.append(controls,list,h("section",{class:"callout"},h("strong",{},"Ce qui est enregistré"),para("Uniquement les validations incorrectes des exercices : notion, diagnostic et extrait de la tentative. Une réussite marque l’erreur comme résolue au lieu de la supprimer. Les erreurs identiques rapprochées sont regroupées.","muted")));
+  queueMicrotask(refresh);
+  return page;
+}
+
+
+function frequentErrorSeverityLabel(value) {
+  if (value === "high") return { label:"Priorité haute", cls:"danger" };
+  if (value === "medium") return { label:"À renforcer", cls:"review" };
+  return { label:"Sous surveillance", cls:"todo" };
+}
+
+function renderFrequentErrorPatternCard(analysis) {
+  const p=analysis.pattern;
+  const pathMeta=p.path==="all"?{title:"Multi-parcours",mark:"↗"}:(ERROR_HISTORY_PATHS[p.path]||{title:p.path,mark:"•"});
+  const severity=frequentErrorSeverityLabel(analysis.severity);
+  const exercises=frequentErrorExercises(analysis,3);
+  return h("article",{class:"frequent-pattern-card path-card--"+(p.path==="all"?"javascript":p.path)},
+    h("div",{class:"frequent-pattern-head"},
+      h("span",{class:"path-mark","aria-hidden":"true"},pathMeta.mark),
+      h("div",{class:"frequent-pattern-title"},h("span",{class:"eyebrow"},pathMeta.title),h("h3",{},p.title)),
+      h("span",{class:"status "+severity.cls},severity.label)),
+    h("div",{class:"frequent-pattern-metrics"},
+      h("span",{},h("strong",{},String(analysis.occurrences))," occurrences"),
+      h("span",{},h("strong",{},String(analysis.distinct))," exercice"+(analysis.distinct>1?"s":"")),
+      h("span",{},"Confiance : ",h("strong",{},analysis.confidence))),
+    para(p.why,"muted frequent-pattern-why"),
+    h("div",{class:"frequent-pattern-advice"},h("strong",{},"Réflexe à adopter"),para(p.reflex)),
+    h("div",{class:"frequent-pattern-drill"},h("strong",{},"Mini-entraînement"),para(p.drill,"muted")),
+    exercises.length?h("div",{class:"frequent-pattern-exercises"},
+      h("strong",{},"Exercices ciblés"),
+      h("ul",{class:"rows compact"},exercises.map(item=>h("li",{class:"row"},h("div",{class:"row-main"},h("strong",{},item.exercise.notion),para(item.path.title+" · "+(item.record.fails||0)+" erreur"+((item.record.fails||0)>1?"s":""),"muted small")),link(item.path.href(item.exercise.id),"Refaire","btn small primary"))))):null,
+    h("details",{class:"frequent-pattern-evidence"},h("summary",{},"Pourquoi cette tendance ?"),
+      para("Elle n’apparaît qu’après au moins deux occurrences ou plusieurs exercices distincts. Les erreurs résolues restent utiles pour observer l’évolution, mais les erreurs encore ouvertes pèsent davantage dans la priorité.","muted small"),
+      h("ul",{class:"rows compact"},analysis.entries.slice(0,4).map(entry=>h("li",{class:"row"},h("div",{class:"row-main"},h("strong",{},entry.notion),para((entry.resolvedAt?"Résolue":"Encore active")+" · rencontrée "+Math.max(1,Number(entry.repeatCount)||1)+" fois","muted small")),link((ERROR_HISTORY_PATHS[entry.path]||ERROR_HISTORY_PATHS.javascript).href(entry.exerciseId),"Voir","btn small")))))
+  );
+}
+
+function renderFrequentErrors() {
+  const stats=frequentErrorGlobalStats();
+  const page=h("div",{class:"page frequent-errors-page"},
+    h("p",{class:"crumbs"},link("/","Accueil")," / Mes tendances"),
+    h("section",{class:"frequent-errors-hero"},
+      h("div",{},h("span",{class:"eyebrow"},"ERREURS FRÉQUENTES PERSONNALISÉES"),h("h1",{},stats.patterns.length?"Tes pièges récurrents, transformés en réflexes":"Pas encore assez de répétitions"),para(stats.patterns.length?"Le site analyse uniquement les erreurs que tu as réellement rencontrées et cherche des schémas qui reviennent. L’objectif n’est pas de te noter, mais de te montrer où un petit automatisme peut faire gagner beaucoup de temps.":"Une erreur isolée ne suffit volontairement pas à créer un diagnostic. Continue à pratiquer : une tendance n’apparaîtra que lorsqu’un même type de difficulté revient réellement.","lead")),
+      h("div",{class:"frequent-errors-stats"},metric(stats.active.length,"tendances actives"),metric(stats.high.length,"priorités hautes"),metric(stats.improving.length,"en amélioration"))),
+    h("section",{class:"callout frequent-errors-privacy"},h("strong",{},"Comment le système personnalise ?"),para("Il ne lit pas ton code en continu. Il analyse uniquement les erreurs déjà enregistrées au moment où tu valides un exercice, puis regroupe les notions, diagnostics et tentatives similaires. Une seule erreur ne suffit jamais à conclure à une faiblesse.","muted"))
+  );
+
+  if(!stats.patterns.length){
+    page.append(h("section",{class:"block"},h("h2",{},"Ce qui apparaîtra ici"),h("div",{class:"frequent-error-empty-grid"},
+      h("article",{class:"stats-card"},h("strong",{},"Exemple JavaScript"),para("Comparaisons et types · erreur répétée sur == / ===","muted")),
+      h("article",{class:"stats-card"},h("strong",{},"Exemple SQL"),para("JOIN et relations · mauvaise clé utilisée plusieurs fois","muted")),
+      h("article",{class:"stats-card"},h("strong",{},"Exemple CSS"),para("Flexbox · confusion récurrente entre justify-content et align-items","muted"))),
+      h("div",{class:"toolbar"},link("/erreurs","Voir mes erreurs utiles","btn"),link("/revisions","Faire une révision","btn primary"))));
+    return page;
+  }
+
+  const controls=h("section",{class:"frequent-errors-controls","aria-label":"Filtres des tendances"});
+  const statusSelect=h("select",{"aria-label":"Filtrer les tendances"},h("option",{value:"all"},"Toutes les tendances"),h("option",{value:"active"},"Encore actives"),h("option",{value:"improving"},"En amélioration"),h("option",{value:"high"},"Priorité haute"));
+  const pathSelect=h("select",{"aria-label":"Filtrer par parcours"},h("option",{value:"all"},"Tous les parcours"),Object.entries(ERROR_HISTORY_PATHS).map(([id,meta])=>h("option",{value:id},meta.title)));
+  const count=h("span",{class:"muted small"});
+  const list=h("section",{class:"frequent-pattern-grid","aria-live":"polite"});
+  function refresh(){
+    let rows=stats.patterns.slice();
+    if(statusSelect.value==="active") rows=rows.filter(x=>x.status==="active");
+    if(statusSelect.value==="improving") rows=rows.filter(x=>x.status==="improving");
+    if(statusSelect.value==="high") rows=rows.filter(x=>x.severity==="high");
+    if(pathSelect.value!=="all") rows=rows.filter(x=>x.pattern.path===pathSelect.value || x.pattern.path==="all");
+    count.textContent=rows.length+" tendance"+(rows.length>1?"s":"")+" affichée"+(rows.length>1?"s":"");
+    list.replaceChildren(...(rows.length?rows.map(renderFrequentErrorPatternCard):[empty("Aucune tendance ne correspond à ce filtre.")]));
+  }
+  statusSelect.addEventListener("change",refresh); pathSelect.addEventListener("change",refresh);
+  controls.append(statusSelect,pathSelect,count);
+  page.append(controls,list,
+    h("section",{class:"callout"},h("strong",{},"À retenir"),para("Une tendance peut disparaître de la liste active quand les exercices concernés sont résolus, mais elle reste visible dans « En amélioration ». Le système privilégie les difficultés encore ouvertes, répétées sur plusieurs exercices et rencontrées récemment.","muted")));
+  queueMicrotask(refresh);
+  return page;
 }
 
 function renderReactHome() {
@@ -1454,6 +1800,13 @@ function renderNotFound() {
 const routes = [
   { re: /^\/$/, view: renderHub },
   { re: /^\/dashboard$/, view: renderGlobalDashboard },
+  { re: /^\/profil$/, view: renderGamificationProfile },
+  { re: /^\/badges$/, view: renderGamificationBadges },
+  { re: /^\/revisions$/, view: renderSpacedReviews },
+  { re: /^\/erreurs$/, view: renderUsefulErrors },
+  { re: /^\/erreurs-frequentes$/, view: renderFrequentErrors },
+  { re: /^\/glossaire$/, view: renderGlossary },
+  { re: /^\/glossaire\/(.+)$/, view: renderGlossaryEntry },
   { re: /^\/javascript$/, view: renderJavascriptHome },
   { re: /^\/react$/, view: renderReactHome },
   { re: /^\/react\/niveau\/(\d+)$/, view: renderReactLevel },

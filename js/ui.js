@@ -62,7 +62,7 @@ function makeEditor(value, rows, onRun, language) {
   });
   editor.value = value;
   const enhanced = enhanceEditor(editor, onRun, language);
-  if (typeof attachEditorCodeHelp === "function") attachEditorCodeHelp(enhanced);
+  if (typeof attachEditorCodeHelp === "function") attachEditorCodeHelp(enhanced, language || "");
   return enhanced;
 }
 
@@ -499,6 +499,7 @@ function renderExercise(ex, options) {
     if (!(session.fails >= 2 || session.solved)) return;
     session.correctionSeen = true;
     recordCorrection(ex);
+    if (typeof markErrorCorrectionSeen === "function") markErrorCorrectionSeen(ex);
     correctionBox.replaceChildren(explanationBox(ex, true));
     refreshButtons();
   }
@@ -521,10 +522,12 @@ function renderExercise(ex, options) {
     if (result.ok) {
       session.solved = true;
       const info = recordResult(ex, true, session);
+      if (typeof resolveUsefulErrors === "function") resolveUsefulErrors(ex, session);
       showSuccess(info);
       finish(true);
     } else {
       session.fails++;
+      if (typeof recordUsefulError === "function") recordUsefulError(ex, result, body.node);
       recordResult(ex, false, session);
       showFailure(result);
     }
@@ -538,6 +541,7 @@ function renderExercise(ex, options) {
       if (info.clean) feedback.append(para("Réussi sans erreur : la notion avance bien. +" + info.points + " point" + (info.points > 1 ? "s" : "") + "."));
       else if (session.correctionSeen) feedback.append(para("Réussi après avoir vu la correction : 0 point. Refais cet exercice plus tard, sans aide, pour valider la notion."));
       else feedback.append(para("Réussi, mais avec de l’aide (+" + info.points + " point" + (info.points > 1 ? "s" : "") + "). Refais-le plus tard sans aide pour valider la notion."));
+      if (info.nextReview) feedback.append(para("Révision espacée : " + info.nextReview + ".", "muted small spaced-review-next"));
     }
     correctionBox.replaceChildren(explanationBox(ex, false));
     if (!quick) hintBtn.disabled = true;
@@ -560,6 +564,7 @@ function renderExercise(ex, options) {
     if (session.fails === 1) {
       if (session.hints < 1) revealHint();
       feedback.append(para("Relis l’indice, puis réessaie."));
+      feedback.append(para("Cette notion sera reproposée plus tôt dans tes révisions espacées.", "muted small"));
     } else if (session.fails === 2) {
       if (session.hints < 2) revealHint();
       feedback.append(para("Un deuxième indice est apparu, et la correction est maintenant disponible. Essaie encore une fois si tu veux."));

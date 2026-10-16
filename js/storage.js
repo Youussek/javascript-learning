@@ -9,7 +9,11 @@ function defaultState() {
   return {
     version: 1,
     theme: "dark",
+    learningMode: "normal", // "normal" ou "beginner" : couche pédagogique optionnelle globale
+    focusMode: false, // mode concentration : masque la navigation uniquement sur les pages d’apprentissage
     lastActiveLearningPath: null, // dernier parcours explicitement ouvert ; ne provoque jamais de redirection automatique
+    errorHistory: [], // erreurs utiles rencontrées dans les exercices, tous parcours confondus
+    gamification: null, // XP, niveau utilisateur, badges, streaks et objectifs (initialisé/migré par gamification.js)
     lastLesson: null,   // dernier cours ouvert, ex. "variables"
     lessonsDone: {},    // cours terminés, ex. { variables: true }
     exercises: {},      // un dossier par exercice : { "var-1": { attempts, fails, success, review, correctionSeen, points } }

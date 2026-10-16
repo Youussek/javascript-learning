@@ -7,11 +7,57 @@ let state = loadState();
 function commit() {
   saveState(state);
   window.dispatchEvent(new Event("progress-changed"));
+  if (typeof window.gamificationOnCommit === "function") window.gamificationOnCommit();
 }
 
 // ─── Dossier d’un exercice ───
 function emptyRecord() {
-  return { attempts: 0, fails: 0, success: false, review: false, correctionSeen: false, points: 0 };
+  return {
+    attempts: 0, fails: 0, success: false, review: false, correctionSeen: false, points: 0,
+    // Révision espacée : stockée dans le même dossier que l'exercice pour ne pas créer une progression parallèle.
+    lastReviewedAt: null, reviewDueAt: null, reviewIntervalDays: 0, reviewStreak: 0
+  };
+}
+
+const SPACED_REVIEW_DAY = 24 * 60 * 60 * 1000;
+
+function scheduleSpacedReview(record, ok, session) {
+  const now = Date.now();
+  record.lastReviewedAt = now;
+
+  if (!ok) {
+    // Une erreur doit revenir vite, mais pas interrompre immédiatement la séance courante.
+    record.reviewStreak = 0;
+    record.reviewIntervalDays = 0.25;
+    record.reviewDueAt = now + Math.round(SPACED_REVIEW_DAY * 0.25);
+    return;
+  }
+
+  const clean = session.fails === 0 && session.hints === 0 && !session.correctionSeen;
+  if (!clean) {
+    record.reviewStreak = 0;
+    record.reviewIntervalDays = 1;
+    record.reviewDueAt = now + SPACED_REVIEW_DAY;
+    return;
+  }
+
+  const previous = Number(record.reviewIntervalDays) || 0;
+  const intervals = [3, 7, 14, 30, 60];
+  const next = intervals.find((days) => days > previous) || 60;
+  record.reviewStreak = (Number(record.reviewStreak) || 0) + 1;
+  record.reviewIntervalDays = next;
+  record.reviewDueAt = now + next * SPACED_REVIEW_DAY;
+}
+
+function nextReviewText(exerciseId, now) {
+  const record = getRecord(exerciseId);
+  if (!record.reviewDueAt) return "Pas encore planifiée";
+  const delta = Number(record.reviewDueAt) - (now || Date.now());
+  if (delta <= 0) return "À réviser maintenant";
+  const hours = Math.ceil(delta / (60 * 60 * 1000));
+  if (hours < 24) return "Dans " + hours + " h";
+  const days = Math.ceil(delta / SPACED_REVIEW_DAY);
+  return "Dans " + days + " jour" + (days > 1 ? "s" : "");
 }
 
 function exercisePathFromId(exerciseId) {
@@ -157,8 +203,9 @@ function recordResult(exercise, ok, session) {
     record.fails++;
     record.review = true;     // un échec → l’exercice passe dans « À revoir »
     notion.ko++;
+    scheduleSpacedReview(record, false, session);
     commit();
-    return {};
+    return { nextReview: nextReviewText(exercise.id) };
   }
 
   record.success = true;
@@ -170,8 +217,9 @@ function recordResult(exercise, ok, session) {
   // 3 points au maximum, un point perdu par erreur ou par indice, 0 si la correction a été vue.
   const points = session.correctionSeen ? 0 : Math.max(1, 3 - session.fails - session.hints);
   record.points = Math.max(record.points || 0, points);
+  scheduleSpacedReview(record, true, session);
   commit();
-  return { points: points, clean: clean };
+  return { points: points, clean: clean, nextReview: nextReviewText(exercise.id) };
 }
 
 function recordCorrection(exercise) {

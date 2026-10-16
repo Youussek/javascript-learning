@@ -811,5 +811,93 @@ Le parcours TypeScript est lui aussi finalisé : **5 niveaux, 45 leçons, 180 ex
 
 ### Aide contextuelle de code façon VS Code
 
-Les exemples de code reconnaissent les notions fréquentes des parcours HTML, CSS, JavaScript, TypeScript, Node.js, SQL et React. Sur desktop, un survol affiche une fiche concise ; sur mobile, un tap l’épingle. Dans les éditeurs, un clic/tap sur un token connu ouvre la même aide. La touche `F1` affiche également l’aide du token situé au curseur.
+L’aide contextuelle est globale sur les sept parcours : HTML, CSS, JavaScript, React, TypeScript, Node.js et SQL. Elle analyse automatiquement tous les `<pre>` et `<code>` créés dans les cours (exemples, code expliqué, corrections, exercices à trous, snippets et sorties de code pertinentes), y compris ceux ajoutés après un changement de route. Sur desktop, le survol ou le focus d’un token reconnu affiche sa fiche ; sur mobile, un tap l’épingle. Tous les éditeurs utilisant `enhanceEditor()` reçoivent aussi l’aide au survol sur desktop, au clic/tap et via `F1`, ce qui couvre notamment les Labs et le SQL Studio. Le dictionnaire inclut les balises/attributs HTML, propriétés CSS, APIs JavaScript/DOM, React/Vite, TypeScript, commandes terminal/npm, Node.js et les mots-clés SQL du parcours.
 
+
+## Mode débutant
+
+Cahier Code possède désormais un mode débutant global et optionnel. Il est mémorisé dans l'état local et fonctionne sur tous les parcours (HTML, CSS, JavaScript, React, TypeScript, Node.js et SQL). Lorsqu'il est activé, les pages de cours ajoutent un objectif reformulé, une méthode en quatre étapes propre au langage et un mini-vocabulaire construit depuis les commandes réellement présentes dans la leçon. Les pages d'exercices ajoutent une méthode guidée sans révéler la solution. Le mode normal reste inchangé.
+
+## Mode focus
+
+Cahier Code propose un **Mode focus** global, compatible avec tous les parcours et avec le Mode débutant. Il est mémorisé dans la progression locale mais ne s'applique visuellement qu'aux pages d'apprentissage (leçons, exercices, projets et évaluations).
+
+En Mode focus :
+- la sidebar et la topbar sont masquées ;
+- les breadcrumbs disparaissent ;
+- le contenu est recentré sur une largeur de lecture confortable ;
+- les éditeurs, Labs, Studios, aides contextuelles et aides du Mode débutant restent disponibles ;
+- un contrôle flottant permet de quitter immédiatement le mode ;
+- le raccourci `Alt + Shift + F` active ou désactive le mode.
+
+L'accueil et le dashboard global restent toujours affichés normalement, même si le Mode focus est mémorisé comme actif.
+
+## Révision espacée intelligente
+
+Cahier Code possède désormais une file globale `#/revisions` commune aux sept parcours. Elle réutilise directement les enregistrements d'exercices existants : aucune progression parallèle n'est créée.
+
+Après chaque tentative, l'exercice mémorise `lastReviewedAt`, `reviewDueAt`, `reviewIntervalDays` et `reviewStreak`. Le rythme est adaptatif : une erreur rapproche l'échéance, une réussite avec aide/correction programme environ un jour, et les réussites propres font progresser l'intervalle vers 3, 7, 14, 30 puis 60 jours.
+
+La page **Révisions du jour** construit une session courte (jusqu'à six exercices) et mélange les parcours lorsque plusieurs technologies ont une échéance. Le dashboard global signale également les rappels dus. Les anciennes progressions restent compatibles : quelques exercices déjà réussis mais antérieurs à cette fonctionnalité servent progressivement à amorcer le planning.
+
+
+## Mes erreurs utiles
+
+Cahier Code conserve désormais localement un historique pédagogique des validations incorrectes dans les exercices.
+
+- l’erreur est enregistrée uniquement au moment de la validation ;
+- les erreurs identiques rapprochées sont regroupées avec un compteur ;
+- la tentative, le diagnostic, la notion et la correction consultée peuvent être retrouvés ;
+- une réussite ultérieure marque l’erreur comme résolue sans l’effacer ;
+- la page globale `#/erreurs` permet de filtrer par statut et par parcours ;
+- le dashboard global affiche le nombre d’erreurs encore à comprendre ;
+- toutes les données restent dans le même état `localStorage` que la progression.
+
+Cette fonctionnalité complète la révision espacée : la première répond à « qu’est-ce que j’ai mal compris ? », la seconde à « quand dois-je le revoir ? ».
+
+## Explique-moi autrement
+
+Une aide pédagogique globale est disponible dans les leçons et exercices des sept parcours. Le bouton **Explique-moi autrement** reformule la notion courante selon quatre angles : **Simple**, **Analogie**, **Exemple concret** et **Technique**. Le système réutilise le titre, les explications et les commandes réellement présentes dans la page ainsi que le dictionnaire d'aide contextuelle ; il ne crée pas une copie séparée des cours. Le dernier angle choisi est mémorisé. Cette aide reste compatible avec le Mode débutant, le Mode focus et les info-bulles de code.
+
+## Système d’erreurs fréquentes personnalisé
+
+Cahier Code possède désormais une vue globale **Mes tendances** (`#/erreurs-frequentes`) qui analyse l’historique réel de **Mes erreurs utiles** sans créer de stockage ou de progression parallèle.
+
+Le système ne conclut jamais à partir d’une seule erreur. Une tendance doit être observée au moins deux fois ou sur plusieurs exercices distincts. Les erreurs encore ouvertes, répétées et réparties sur plusieurs exercices pèsent davantage dans la priorité.
+
+Les tendances couvrent les sept parcours et regroupent notamment : structure/accessibilité HTML, sélecteurs et mise en page CSS, comparaisons/portée/tableaux/DOM/asynchronisme JavaScript, state/hooks/listes React, types/narrowing/objets TypeScript, modules/fichiers/HTTP Node.js, et NULL/WHERE/JOIN/agrégations/contraintes SQL.
+
+Chaque carte indique :
+
+- le nombre d’occurrences et d’exercices concernés ;
+- le niveau de confiance du diagnostic ;
+- le statut (actif ou en amélioration) ;
+- un réflexe concret à adopter ;
+- un mini-entraînement ;
+- jusqu’à trois exercices ciblés issus du vrai catalogue du parcours ;
+- les erreurs qui ont servi à détecter la tendance.
+
+Le dashboard global affiche également le nombre de tendances encore actives. Ce système complète **Mes erreurs utiles** : l’historique conserve les erreurs individuelles, tandis que **Mes tendances** repère les schémas qui se répètent.
+
+## Glossaire intelligent global
+
+La plateforme dispose maintenant d'un glossaire commun à HTML, CSS, JavaScript, React, TypeScript, Node.js et SQL. Il réutilise exactement le dictionnaire de l'aide contextuelle afin d'éviter deux sources de définitions divergentes. La page `#/glossaire` permet la recherche et le filtrage par parcours ; chaque fiche affiche définition, exemple, piège fréquent, notions liées et leçons où le terme est réellement détecté. Les info-bulles de code proposent aussi un accès direct à la fiche complète.
+
+## Gamification globale
+
+La plateforme possède désormais une progression personnelle globale distincte des niveaux pédagogiques des parcours.
+
+- **XP global** : attribué uniquement à des accomplissements pédagogiques réels (leçons terminées, exercices réussis, évaluations, projets et niveaux pédagogiques achevés).
+- **Idempotence** : chaque récompense possède une clé stable ; recharger ou refaire une ressource déjà récompensée ne redonne pas d'XP.
+- **Niveau utilisateur** : calculé depuis l'XP global avec une courbe progressive (`N2=100`, `N3=250`, `N4=450`, `N5=700` XP cumulés).
+- **Bonus premier essai** : accordé seulement si l'exercice a été réussi sans échec ni correction préalable.
+- **Streak** : une journée n'est active qu'après une vraie action récompensée. Plusieurs activités le même jour ne comptent que pour un seul jour de streak.
+- **Objectif quotidien** : léger (20 XP), normal (40 XP) ou intensif (80 XP), au choix de l'utilisateur.
+- **Badges data-driven** : progression, régularité, performance, projets, exploration, langages et maîtrise.
+- **Journal XP** : historique des gains pour rendre le système vérifiable.
+- **Profil global** : niveau, XP, streak, record, objectif, calendrier d'activité, XP par parcours et activité récente.
+- **Migration silencieuse** : les anciennes progressions reçoivent rétroactivement leur XP et leurs badges sans notifications historiques. Aucun ancien streak n'est inventé.
+
+La configuration principale vit dans `js/gamification.js` (`GAMIFICATION_CONFIG`, catalogue de badges et moteur de synchronisation). La progression pédagogique reste la source de vérité ; la gamification ne stocke que les récompenses déjà attribuées et les statistiques globales.
+
+Cette version étant une application locale sans authentification ni backend, les garanties anti-triche sont limitées au calcul à partir des événements pédagogiques et à l'idempotence locale. Une sécurité forte contre la modification volontaire du `localStorage` nécessiterait une validation serveur.
