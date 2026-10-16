@@ -332,7 +332,7 @@ function membersFor(objectName, language) {
 // Calcule la liste de suggestions pour un curseur en position `pos`.
 // Renvoie { items, start } (start = début du mot à remplacer) ou null.
 function computeSuggestions(code, pos, force, language) {
-  if (language === "css") return null;
+  if (language === "css" || language === "sql") return null;
   if (language === "html") return computeHtmlSuggestions(code, pos);
   const before = code.slice(0, pos);
   const lineBefore = before.slice(before.lastIndexOf("\n") + 1);

@@ -19,6 +19,9 @@ function exercisePathFromId(exerciseId) {
   if (/^rx-|^reval-/.test(id)) return "react";
   if (/^cx-|^ceval-/.test(id)) return "css";
   if (/^hx-|^heval-/.test(id)) return "html";
+  if (/^tsx-|^tseval-/.test(id)) return "typescript";
+  if (/^nx-|^nodeeval-/.test(id)) return "node";
+  if (/^sx|^sqleval-/.test(id)) return "sql";
   return "javascript";
 }
 
@@ -48,11 +51,42 @@ function ensureHtmlProgressStores() {
   if (!state.html.lessonsDone) state.html.lessonsDone = {};
 }
 
+function ensureTypeScriptProgressStores() {
+  if (!state.typescript) state.typescript = { lessonsDone: {}, lastLesson: null, projects: {}, exercises: {}, notions: {}, evaluations: {} };
+  if (!state.typescript.exercises) state.typescript.exercises = {};
+  if (!state.typescript.notions) state.typescript.notions = {};
+  if (!state.typescript.evaluations) state.typescript.evaluations = {};
+  if (!state.typescript.projects) state.typescript.projects = {};
+  if (!state.typescript.lessonsDone) state.typescript.lessonsDone = {};
+}
+
+function ensureNodeProgressStores() {
+  if (!state.node) state.node = { lessonsDone: {}, lastLesson: null, projects: {}, exercises: {}, notions: {}, evaluations: {} };
+  if (!state.node.exercises) state.node.exercises = {};
+  if (!state.node.notions) state.node.notions = {};
+  if (!state.node.evaluations) state.node.evaluations = {};
+  if (!state.node.projects) state.node.projects = {};
+  if (!state.node.lessonsDone) state.node.lessonsDone = {};
+}
+
+
+function ensureSqlProgressStores() {
+  if (!state.sql) state.sql = { lessonsDone: {}, lastLesson: null, projects: {}, exercises: {}, notions: {}, evaluations: {} };
+  if (!state.sql.exercises) state.sql.exercises = {};
+  if (!state.sql.notions) state.sql.notions = {};
+  if (!state.sql.evaluations) state.sql.evaluations = {};
+  if (!state.sql.projects) state.sql.projects = {};
+  if (!state.sql.lessonsDone) state.sql.lessonsDone = {};
+}
+
 function exerciseStore(exerciseId) {
   const path = exercisePathFromId(exerciseId);
   if (path === "react") { ensureReactProgressStores(); return state.react.exercises; }
   if (path === "css") { ensureCssProgressStores(); return state.css.exercises; }
   if (path === "html") { ensureHtmlProgressStores(); return state.html.exercises; }
+  if (path === "typescript") { ensureTypeScriptProgressStores(); return state.typescript.exercises; }
+  if (path === "node") { ensureNodeProgressStores(); return state.node.exercises; }
+  if (path === "sql") { ensureSqlProgressStores(); return state.sql.exercises; }
   return state.exercises;
 }
 
@@ -82,6 +116,21 @@ function ensureNotion(name, path) {
     ensureHtmlProgressStores();
     if (!state.html.notions[name]) state.html.notions[name] = { ok: 0, ko: 0 };
     return state.html.notions[name];
+  }
+  if (path === "typescript") {
+    ensureTypeScriptProgressStores();
+    if (!state.typescript.notions[name]) state.typescript.notions[name] = { ok: 0, ko: 0 };
+    return state.typescript.notions[name];
+  }
+  if (path === "node") {
+    ensureNodeProgressStores();
+    if (!state.node.notions[name]) state.node.notions[name] = { ok: 0, ko: 0 };
+    return state.node.notions[name];
+  }
+  if (path === "sql") {
+    ensureSqlProgressStores();
+    if (!state.sql.notions[name]) state.sql.notions[name] = { ok: 0, ko: 0 };
+    return state.sql.notions[name];
   }
   if (!state.notions[name]) state.notions[name] = { ok: 0, ko: 0 };
   return state.notions[name];

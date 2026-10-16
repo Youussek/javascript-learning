@@ -55,20 +55,81 @@ function demo(item) {
 
 // ─── Barre latérale ───
 function navIcon(name) {
-  const icons = { home:"⌂", paths:"◇", book:"▤", exercise:"✓", review:"↻", project:"◈", progress:"◎", react:"⚛", css:"CSS", html:"HTML", js:"JS", back:"←" };
+  const icons = { home:"⌂", paths:"◇", dashboard:"◎", book:"▤", exercise:"✓", review:"↻", project:"◈", progress:"◎", react:"⚛", css:"CSS", html:"HTML", ts:"TS", node:"N", sql:"SQL", js:"JS", back:"←" };
   return h("span", { class:"nav-icon", "aria-hidden":"true" }, icons[name] || "•");
+}
+
+// Métadonnées d'interface : une seule configuration pour l'ordre, les catégories et les recommandations.
+// Les titres, descriptions, URLs et contenus restent issus de LEARNING_PATHS.
+const LEARNING_PATH_UI = {
+  html:       { order:1, category:"Fondamentaux Web", difficulty:"Débutant", prerequisite:"Aucun prérequis" },
+  css:        { order:2, category:"Fondamentaux Web", difficulty:"Débutant", prerequisite:"HTML recommandé" },
+  javascript: { order:3, category:"Fondamentaux Web", difficulty:"Débutant → avancé", prerequisite:"HTML/CSS utiles" },
+  react:      { order:4, category:"Frontend", difficulty:"Intermédiaire", prerequisite:"JavaScript recommandé" },
+  typescript: { order:5, category:"Langage & qualité", difficulty:"Intermédiaire", prerequisite:"JavaScript recommandé" },
+  node:       { order:6, category:"Backend", difficulty:"Intermédiaire", prerequisite:"JavaScript recommandé" },
+  sql:        { order:7, category:"Données", difficulty:"Débutant → avancé", prerequisite:"Aucun prérequis" }
+};
+
+function orderedLearningPaths() {
+  return LEARNING_PATHS.slice().sort((a,b)=>(LEARNING_PATH_UI[a.id]?.order||99)-(LEARNING_PATH_UI[b.id]?.order||99));
+}
+
+function routeLearningPathId(path) {
+  if (path.startsWith("/react")) return "react";
+  if (path.startsWith("/css")) return "css";
+  if (path.startsWith("/html")) return "html";
+  if (path.startsWith("/typescript")) return "typescript";
+  if (path.startsWith("/node")) return "node";
+  if (path.startsWith("/sql")) return "sql";
+  if (path === "/javascript" || /^\/(cours|exercices|exercice|revision|projets|projet|progression)(\/|$)/.test(path)) return "javascript";
+  return null;
+}
+
+function renderGlobalPathSwitcher(path) {
+  const host=document.getElementById("path-switcher");
+  if(!host) return;
+  const currentId=routeLearningPathId(path);
+  const current=LEARNING_PATHS.find(p=>p.id===currentId);
+  const details=h("details",{class:"path-switcher"},
+    h("summary",{},
+      h("span",{class:"switcher-label"},current?"Parcours actuel":"Parcours"),
+      h("strong",{},current?current.title:"Choisir un parcours"),
+      h("span",{class:"switcher-chevron","aria-hidden":"true"},"⌄")
+    ),
+    h("div",{class:"path-switcher-menu"},orderedLearningPaths().map(p=>
+      h("a",{href:"#"+p.href,class:"path-switcher-item"+(p.id===currentId?" active":""),"aria-current":p.id===currentId?"page":null},
+        h("span",{class:"switcher-mark path-card--"+p.id},h("span",{class:"path-mark"},p.mark)),
+        h("span",{},h("strong",{},p.title),h("small",{},LEARNING_PATH_UI[p.id]?.category||"Parcours"))
+      )
+    ))
+  );
+  host.replaceChildren(details);
+  const topbarTitle=document.getElementById("topbar-title");
+  const topbarPaths=document.getElementById("topbar-paths");
+  if(topbarTitle) topbarTitle.textContent=current?current.title:"Cahier Code";
+  if(topbarPaths) topbarPaths.textContent=current?"Changer de parcours":"Choisir un parcours";
 }
 
 function renderNav() {
   const nav = document.getElementById("nav");
   const path = location.hash.replace(/^#/, "") || "/";
+  const isGlobal = path === "/" || path === "/dashboard";
   const inReact = path.startsWith("/react");
   const inCss = path.startsWith("/css");
   const inHtml = path.startsWith("/html");
+  const inTypeScript = path.startsWith("/typescript");
+  const inNode = path.startsWith("/node");
+  const inSql = path.startsWith("/sql");
+  const inJavascript = routeLearningPathId(path) === "javascript";
+  renderGlobalPathSwitcher(path);
   const cssLessonForNav = inCss && path.startsWith("/css/cours/") ? CSS_LESSONS.find(l=>path.endsWith("/"+l.id)) : null;
   const cssLevelForNav = cssLessonForNav ? cssLessonForNav.level : (inCss && path.match(/^\/css\/niveau\/(\d+)/) ? Number(path.match(/^\/css\/niveau\/(\d+)/)[1]) : ((cssState().lastLesson && CSS_LESSONS.find(l=>l.id===cssState().lastLesson)) ? CSS_LESSONS.find(l=>l.id===cssState().lastLesson).level : 1));
-  document.body.dataset.path = path === "/" ? "hub" : inReact ? "react" : inCss ? "css" : inHtml ? "html" : "javascript";
-  const items = inReact ? [
+  document.body.dataset.path = isGlobal ? "hub" : inReact ? "react" : inCss ? "css" : inHtml ? "html" : inTypeScript ? "typescript" : inNode ? "node" : inSql ? "sql" : inJavascript ? "javascript" : "hub";
+  const items = isGlobal ? [
+    { href: "/", text: "Accueil", icon:"home", prefix:null },
+    { href: "/dashboard", text: "Mes parcours", icon:"dashboard", exact:true, prefix:"/dashboard" },
+  ] : inReact ? [
     { href: "/", text: "Parcours", icon:"back", prefix: null },
     { href: "/react", text: "Vue d’ensemble", icon:"react", prefix: "/react" },
     { href: "/react/exercices", text: "Exercices", icon:"exercise", prefix: "/react/exercice" },
@@ -86,6 +147,24 @@ function renderNav() {
     { href: "/html/exercices", text: "Exercices", icon:"exercise", prefix: "/html/exercice" },
     { href: "/html/revision", text: "Révision", icon:"review", prefix: "/html/revision" },
     { href: "/html/projets", text: "Projets", icon:"project", prefix: "/html/proj" },
+  ] : inTypeScript ? [
+    { href: "/", text: "Parcours", icon:"back", prefix: null },
+    { href: "/typescript", text: "Vue d’ensemble", icon:"ts", prefix: "/typescript" },
+    { href: "/typescript/exercices", text: "Exercices", icon:"exercise", prefix: "/typescript/exercice" },
+    { href: "/typescript/revision", text: "Révision", icon:"review", prefix: "/typescript/revision" },
+    { href: "/typescript/projets", text: "Projets", icon:"project", prefix: "/typescript/proj" },
+  ] : inNode ? [
+    { href: "/", text: "Parcours", icon:"back", prefix: null },
+    { href: "/node", text: "Vue d’ensemble", icon:"node", prefix: "/node" },
+    { href: "/node/exercices", text: "Exercices", icon:"exercise", prefix: "/node/exercice" },
+    { href: "/node/revision", text: "Révision", icon:"review", prefix: "/node/revision" },
+    { href: "/node/projets", text: "Projets", icon:"project", prefix: "/node/proj" },
+  ] : inSql ? [
+    { href: "/", text: "Parcours", icon:"back", prefix: null },
+    { href: "/sql", text: "Vue d’ensemble", icon:"sql", prefix: "/sql" },
+    { href: "/sql/exercices", text: "Exercices", icon:"exercise", prefix: "/sql/exercice" },
+    { href: "/sql/revision", text: "Révision", icon:"review", prefix: "/sql/revision" },
+    { href: "/sql/projets", text: "Projets", icon:"project", prefix: "/sql/proj" },
   ] : [
     { href: "/", text: "Parcours", icon:"paths", prefix: null },
     { href: "/javascript", text: "Vue d’ensemble", icon:"home", prefix: "/javascript" },
@@ -96,9 +175,18 @@ function renderNav() {
     { href: "/progression", text: "Progression", icon:"progress", prefix: "/progression" },
   ];
   const mainLinks = items.map((item) => {
-    const active = item.prefix === null ? path === "/" : (item.href === "/react" ? path === "/react" : item.href === "/css" ? path === "/css" : item.href === "/html" ? path === "/html" : path.startsWith(item.prefix));
+    const active = item.prefix === null ? path === item.href : item.exact ? path === item.href : (item.href === "/react" ? path === "/react" : item.href === "/css" ? path === "/css" : item.href === "/html" ? path === "/html" : item.href === "/typescript" ? path === "/typescript" : item.href === "/node" ? path === "/node" : item.href === "/sql" ? path === "/sql" : item.href === "/javascript" ? path === "/javascript" : path.startsWith(item.prefix));
     return h("a", { href: "#" + item.href, class: "nav-link", "aria-current": active ? "page" : null, title:item.text }, navIcon(item.icon), h("span",{class:"nav-label"},item.text));
   });
+  if (isGlobal) {
+    nav.replaceChildren(h("div", { class:"nav-main" }, mainLinks),
+      h("p",{class:"nav-heading"},"ACCÈS RAPIDE"),
+      h("div",{class:"nav-main"},
+        h("a",{href:"#/",class:"nav-link"},navIcon("paths"),h("span",{class:"nav-label"},"Tous les parcours")),
+        h("a",{href:"#/dashboard",class:"nav-link"},navIcon("progress"),h("span",{class:"nav-label"},"Progression globale"))
+      ));
+    return;
+  }
   if (inReact) {
     const levels = REACT_LEVELS.map((level) => {
       const stats = reactLevelStats(level.number);
@@ -119,6 +207,24 @@ function renderNav() {
     const currentLesson = path.startsWith("/html/cours/") ? HTML_LESSONS.find(l=>path.endsWith("/"+l.id)) : null;
     const levels=HTML_LEVELS.map(level=>{const stats=htmlLevelStats(level.number); const active=path==="/html/niveau/"+level.number || (currentLesson&&currentLesson.level===level.number); return h("li",{class:"level"+(active?" active":"")},h("a",{href:"#/html/niveau/"+level.number},h("span",{class:"level-dot"},stats.percent===100?"✓":String(level.number)),h("span",{class:"level-copy"},h("strong",{},level.title),h("small",{},stats.percent+" %"))));});
     nav.replaceChildren(h("div",{class:"nav-main"},mainLinks),h("p",{class:"nav-heading"},"PARCOURS HTML"),h("ul",{class:"levels"},levels));
+    return;
+  }
+  if (inTypeScript) {
+    const currentLesson = path.startsWith("/typescript/cours/") ? TYPESCRIPT_LESSONS.find(l=>path.endsWith("/"+l.id)) : null;
+    const levels=TYPESCRIPT_LEVELS.map(level=>{const stats=typeScriptLevelStats(level.number); const active=path==="/typescript/niveau/"+level.number || (currentLesson&&currentLesson.level===level.number); return h("li",{class:"level"+(active?" active":"")},h("a",{href:"#/typescript/niveau/"+level.number},h("span",{class:"level-dot"},stats.percent===100?"✓":String(level.number)),h("span",{class:"level-copy"},h("strong",{},level.title),h("small",{},stats.percent+" %"))));});
+    nav.replaceChildren(h("div",{class:"nav-main"},mainLinks),h("p",{class:"nav-heading"},"PARCOURS TYPESCRIPT"),h("ul",{class:"levels"},levels));
+    return;
+  }
+  if (inNode) {
+    const currentLesson = path.startsWith("/node/cours/") ? NODE_LESSONS.find(l=>path.endsWith("/"+l.id)) : null;
+    const levels=NODE_LEVELS.map(level=>{const stats=nodeLevelStats(level.number); const active=path==="/node/niveau/"+level.number || (currentLesson&&currentLesson.level===level.number); return h("li",{class:"level"+(active?" active":"")},h("a",{href:"#/node/niveau/"+level.number},h("span",{class:"level-dot"},stats.percent===100?"✓":String(level.number)),h("span",{class:"level-copy"},h("strong",{},level.title),h("small",{},stats.percent+" %"))));});
+    nav.replaceChildren(h("div",{class:"nav-main"},mainLinks),h("p",{class:"nav-heading"},"PARCOURS NODE.JS"),h("ul",{class:"levels"},levels));
+    return;
+  }
+  if (inSql) {
+    const currentLesson = path.startsWith("/sql/cours/") ? SQL_LESSONS.find(l=>path.endsWith("/"+l.id)) : null;
+    const levels=SQL_LEVELS.map(level=>{const stats=sqlLevelStats(level.number); const active=path==="/sql/niveau/"+level.number || (currentLesson&&currentLesson.level===level.number); return h("li",{class:"level"+(active?" active":"")},h("a",{href:"#/sql/niveau/"+level.number},h("span",{class:"level-dot"},stats.percent===100?"✓":String(level.number)),h("span",{class:"level-copy"},h("strong",{},level.title),h("small",{},stats.percent+" %"))));});
+    nav.replaceChildren(h("div",{class:"nav-main"},mainLinks),h("p",{class:"nav-heading"},"PARCOURS SQL"),h("ul",{class:"levels"},levels));
     return;
   }
   const levels = MODULES.map((module) => {
@@ -162,36 +268,124 @@ function reactProjectState(id) {
   return projects[id];
 }
 function metric(value, label) { return h("div",{class:"metric"},h("strong",{},String(value)),h("span",{},label)); }
-function renderHub() {
-  const jsPercent = Math.round(availableModules().reduce((n,m)=>n+moduleStats(m.id).percent,0)/Math.max(1,availableModules().length));
-  const reactPercent = reactProgress();
-  const cssPercent = cssProgress();
-  const htmlPercent = htmlProgress();
-  const pathOrder = ["html", "css", "javascript", "react"];
-  const pathData = LEARNING_PATHS
-    .map(path => ({...path, percent:path.id==="javascript"?jsPercent:path.id==="react"?reactPercent:path.id==="css"?cssPercent:htmlPercent}))
-    .sort((a,b) => pathOrder.indexOf(a.id) - pathOrder.indexOf(b.id));
-  return h("div", { class:"page path-hub" },
-    h("section",{class:"hub-hero"},
-      h("div",{class:"hub-copy"},h("span",{class:"eyebrow"},"PLATEFORME D’APPRENTISSAGE"),h("h1",{},"Construis tes compétences. Une ligne de code à la fois."),para("Des parcours progressifs, des exercices pratiques et de vrais projets pour passer de la théorie au code.","lead"),h("div",{class:"hub-metrics"},metric(LEARNING_PATHS.length,"parcours"),metric(LESSONS.length + REACT_LESSONS.length + CSS_LESSONS.length + HTML_LESSONS.length,"cours"),metric(EXERCISES.length + REACT_EXERCISES.length + CSS_EXERCISES.length + HTML_EXERCISES.length,"exercices"))),
-      h("div",{class:"terminal-card","aria-hidden":"true"},h("div",{class:"terminal-top"},h("span",{},"●"),h("span",{},"●"),h("span",{},"●"),h("small",{},"learning.js")),h("pre",{},'const parcours = [\n  "HTML",\n  "CSS",\n  "JavaScript",\n  "React"\n];\n\nparcours.forEach(learn);',h("span",{class:"terminal-cursor"},"▍")))),
-    h("div",{class:"section-heading hub-heading"},h("div",{},h("span",{class:"eyebrow"},"TES PARCOURS"),h("h2",{},"Que veux-tu apprendre ?")),para("Chaque parcours garde sa propre progression.","muted")),
-    h("div", { class:"path-grid" }, pathData.map((path) => {
-      const isJs=path.id==="javascript", isCss=path.id==="css", isHtml=path.id==="html";
-      const current = path.percent>0;
-      const totalLevels=isJs?MODULES.length:isCss?CSS_LEVELS.length:isHtml?HTML_LEVELS.length:REACT_LEVELS.length;
-      const courseCount=isJs?LESSONS.length:isCss?CSS_LESSONS.length:isHtml?HTML_LESSONS.length:REACT_LESSONS.length;
-      return h("article", { class:"path-card path-card--"+path.id },
-        h("div",{class:"path-card-head"},h("span", {class:"path-mark", "aria-hidden":"true"}, path.mark),current?h("span",{class:"badge path-current"},"EN COURS"):h("span",{class:"badge notion"},"À DÉCOUVRIR")),
-        h("div",{class:"path-visual","aria-hidden":"true"}, isJs?h("pre",{},"{ }   =>   []\n console.log()") : isCss?h("pre",{},".card {\n  display: grid;\n  gap: 1rem;\n}") : isHtml?h("pre",{},"<main>\n  <h1>HTML</h1>\n</main>") : h("pre",{},"<App />\n ├─ <Header />\n └─ <Module />")),
-        h("h2",{},path.title),para(path.subtitle,"path-subtitle"),para(path.description,"muted"),
-        h("div",{class:"path-progress"},h("div",{class:"progress-label"},h("span",{},"Progression"),h("strong",{},path.percent+" %")),bar(path.percent)),
-        h("div",{class:"path-facts"},h("span",{},totalLevels+" niveaux"),h("span",{},courseCount+" cours")),
-        link(path.href, current ? "Continuer le parcours →" : "Commencer le parcours →", "btn primary path-cta"));
-    })),
-    h("section",{class:"future-paths"},h("span",{class:"eyebrow"},"BIENTÔT DISPONIBLE"),h("div",{class:"future-grid"},["TypeScript","Python","Node.js"].map((name)=>h("div",{class:"future-card"},h("span",{class:"future-icon"},"◇"),h("strong",{},name),h("span",{class:"badge soon"},"Bientôt")))))
-  );
+function learningPathSummary(path) {
+  const ui=LEARNING_PATH_UI[path.id]||{};
+  let percent=0, lastLesson=null, currentLevel=1, levels=0, lessons=0, exercises=0, projects=0, projectsDone=0, resumeHref=path.href;
+  if(path.id==="javascript"){
+    percent=Math.round(availableModules().reduce((n,m)=>n+moduleStats(m.id).percent,0)/Math.max(1,availableModules().length));
+    lastLesson=state.lastLesson?LESSONS.find(l=>l.id===state.lastLesson):null;
+    const mod=lastLesson?MODULES.find(m=>m.id===lastLesson.module):(availableModules().find(m=>moduleStats(m.id).percent<100)||availableModules()[availableModules().length-1]);
+    currentLevel=mod?.number||1; levels=MODULES.length; lessons=LESSONS.length; exercises=EXERCISES.length; projects=PROJECTS.length;
+    projectsDone=PROJECTS.filter(p=>getProjectState(p.id).done).length;
+    if(lastLesson) resumeHref="/cours/"+lastLesson.id;
+  } else if(path.id==="react"){
+    percent=reactProgress(); const st=reactState(); lastLesson=st.lastLesson?REACT_LESSONS.find(l=>l.id===st.lastLesson):null;
+    currentLevel=lastLesson?.level||(REACT_LEVELS.find(l=>reactLevelStats(l.number).percent<100)||REACT_LEVELS[REACT_LEVELS.length-1]).number;
+    levels=REACT_LEVELS.length; lessons=REACT_LESSONS.length; exercises=REACT_EXERCISES.length; projects=REACT_PROJECTS.length; projectsDone=REACT_PROJECTS.filter(p=>reactProjectState(p.id).done).length;
+    if(lastLesson) resumeHref="/react/cours/"+lastLesson.id;
+  } else if(path.id==="css"){
+    percent=cssProgress(); const st=cssState(); lastLesson=st.lastLesson?CSS_LESSONS.find(l=>l.id===st.lastLesson):null;
+    currentLevel=lastLesson?.level||(CSS_LEVELS.find(l=>cssLevelStats(l.number).percent<100)||CSS_LEVELS[CSS_LEVELS.length-1]).number;
+    levels=CSS_LEVELS.length; lessons=CSS_LESSONS.length; exercises=CSS_EXERCISES.length; projects=CSS_PROJECTS.length; projectsDone=CSS_PROJECTS.filter(p=>cssProjectState(p.id).done).length;
+    if(lastLesson) resumeHref="/css/cours/"+lastLesson.id;
+  } else if(path.id==="html"){
+    percent=htmlProgress(); const st=htmlState(); lastLesson=st.lastLesson?HTML_LESSONS.find(l=>l.id===st.lastLesson):null;
+    currentLevel=lastLesson?.level||(HTML_LEVELS.find(l=>htmlLevelStats(l.number).percent<100)||HTML_LEVELS[HTML_LEVELS.length-1]).number;
+    levels=HTML_LEVELS.length; lessons=HTML_LESSONS.length; exercises=HTML_EXERCISES.length; projects=HTML_PROJECTS.length; projectsDone=HTML_PROJECTS.filter(p=>htmlProjectState(p.id).done).length;
+    if(lastLesson) resumeHref="/html/cours/"+lastLesson.id;
+  } else if(path.id==="typescript"){
+    percent=typeScriptProgress(); const st=typeScriptState(); lastLesson=st.lastLesson?TYPESCRIPT_LESSONS.find(l=>l.id===st.lastLesson):null;
+    currentLevel=lastLesson?.level||(TYPESCRIPT_LEVELS.find(l=>typeScriptLevelStats(l.number).percent<100)||TYPESCRIPT_LEVELS[TYPESCRIPT_LEVELS.length-1]).number;
+    levels=TYPESCRIPT_LEVELS.length; lessons=TYPESCRIPT_LESSONS.length; exercises=TYPESCRIPT_EXERCISES.length; projects=TYPESCRIPT_PROJECTS.length; projectsDone=TYPESCRIPT_PROJECTS.filter(p=>typeScriptProjectState(p.id).done).length;
+    if(lastLesson) resumeHref="/typescript/cours/"+lastLesson.id;
+  } else if(path.id==="node"){
+    percent=nodeProgress(); const st=nodeState(); lastLesson=st.lastLesson?NODE_LESSONS.find(l=>l.id===st.lastLesson):null;
+    currentLevel=lastLesson?.level||(NODE_LEVELS.find(l=>nodeLevelStats(l.number).percent<100)||NODE_LEVELS[NODE_LEVELS.length-1]).number;
+    levels=NODE_LEVELS.length; lessons=NODE_LESSONS.length; exercises=NODE_EXERCISES.length; projects=NODE_PROJECTS.length; projectsDone=NODE_PROJECTS.filter(p=>nodeProjectState(p.id).done).length;
+    if(lastLesson) resumeHref="/node/cours/"+lastLesson.id;
+  } else if(path.id==="sql"){
+    percent=sqlProgress(); const st=sqlState(); lastLesson=st.lastLesson?SQL_LESSONS.find(l=>l.id===st.lastLesson):null;
+    currentLevel=lastLesson?.level||(SQL_LEVELS.find(l=>sqlLevelStats(l.number).percent<100)||SQL_LEVELS[SQL_LEVELS.length-1]).number;
+    levels=SQL_LEVELS.length; lessons=SQL_LESSONS.length; exercises=SQL_EXERCISES.length; projects=SQL_PROJECTS.length; projectsDone=SQL_PROJECTS.filter(p=>sqlProjectState(p.id).done).length;
+    if(lastLesson) resumeHref="/sql/cours/"+lastLesson.id;
+  }
+  const started=percent>0||!!lastLesson;
+  const status=percent>=100?"Terminé":started?"En cours":"Disponible";
+  return {...path,...ui,percent,lastLesson,currentLevel,levels,lessons,exercises,projects,projectsDone,resumeHref,started,status};
 }
+
+function allLearningPathSummaries(){ return orderedLearningPaths().map(learningPathSummary); }
+
+function renderLearningPathCard(path, compact=false){
+  const action=path.percent>=100?"Revoir":path.started?"Continuer":"Commencer";
+  const statusClass=path.percent>=100?"done":path.started?"current":"available";
+  return h("article",{class:"path-card path-card--"+path.id+(compact?" compact":"")},
+    h("div",{class:"path-card-head"},
+      h("span",{class:"path-mark","aria-hidden":"true"},path.mark),
+      h("span",{class:"path-status "+statusClass},path.status)),
+    h("div",{class:"path-meta-row"},h("span",{class:"path-category"},path.category),h("span",{class:"path-difficulty"},path.difficulty)),
+    h("h2",{},path.title),
+    para(path.description,"path-description"),
+    h("div",{class:"path-progress"},h("div",{class:"progress-label"},h("span",{},path.started?"Progression":"Prêt à commencer"),h("strong",{},path.percent+" %")),bar(path.percent)),
+    h("div",{class:"path-learning-state"},
+      h("div",{},h("span",{},path.started?"Niveau":"Niveaux"),h("strong",{},path.started?path.currentLevel+" / "+path.levels:String(path.levels))),
+      h("div",{},h("span",{},"Cours"),h("strong",{},String(path.lessons))),
+      h("div",{},h("span",{},"Projets"),h("strong",{},path.projectsDone+" / "+path.projects))),
+    path.lastLesson?h("p",{class:"path-last"},h("span",{},"Dernière leçon"),h("strong",{},path.lastLesson.title)):para(path.prerequisite,"path-prerequisite"),
+    h("div",{class:"path-card-actions"},
+      link(path.started?path.resumeHref:path.href,action+" →","btn primary path-cta"),
+      path.started?link(path.href,"Voir le parcours","btn path-secondary"):null));
+}
+
+function renderResumePanel(path){
+  if(!path) return h("div",{class:"welcome-overview"},
+    h("div",{class:"welcome-logo","aria-hidden":"true"},h("img",{src:"assets/favicon.png",alt:""})),
+    h("span",{class:"eyebrow"},"7 PARCOURS COMPLETS"),
+    h("h2",{},"Choisis ton point de départ."),
+    para("HTML, CSS, JavaScript, React, TypeScript, Node.js ou SQL : chaque parcours garde sa progression séparément.","muted"));
+  return h("article",{class:"resume-panel path-card--"+path.id},
+    h("span",{class:"eyebrow"},"REPRENDRE LÀ OÙ TU T'ES ARRÊTÉ"),
+    h("div",{class:"resume-title"},h("span",{class:"path-mark","aria-hidden":"true"},path.mark),h("div",{},h("h2",{},path.title),para("Niveau "+path.currentLevel+" sur "+path.levels,"muted small"))),
+    path.lastLesson?para(path.lastLesson.title,"resume-lesson"):para("Ton parcours est déjà commencé.","resume-lesson"),
+    h("div",{class:"progress-label"},h("span",{},"Progression"),h("strong",{},path.percent+" %")),bar(path.percent),
+    h("div",{class:"path-card-actions"},link(path.resumeHref,"Continuer →","btn primary"),link(path.href,"Voir le parcours","btn")));
+}
+
+function renderHub() {
+  const paths=allLearningPathSummaries();
+  const started=paths.filter(p=>p.started);
+  const lastActive=(state.lastActiveLearningPath?paths.find(p=>p.id===state.lastActiveLearningPath&&p.started):null) || started.find(p=>p.lastLesson) || started[0] || null;
+  const totalLessons=paths.reduce((n,p)=>n+p.lessons,0);
+  const totalExercises=paths.reduce((n,p)=>n+p.exercises,0);
+  return h("div",{class:"page path-hub home-v2"},
+    h("section",{class:"hub-hero hub-hero-v2"},
+      h("div",{class:"hub-copy"},
+        h("span",{class:"eyebrow"},started.length?"BON RETOUR 👋":"BIENVENUE SUR CAHIER CODE"),
+        h("h1",{},"Qu’est-ce que tu veux apprendre ?"),
+        para("Choisis librement ton parcours. Cours interactifs, exercices, projets et progression : aucun langage n’est imposé.","lead"),
+        h("div",{class:"hub-actions"},
+          h("button",{class:"btn primary big",type:"button",onclick:()=>document.getElementById("learning-paths")?.scrollIntoView({behavior:"smooth",block:"start"})},"Choisir mon parcours ↓"),
+          started.length?link("/dashboard","Voir mes parcours","btn big"):null),
+        h("div",{class:"hub-metrics"},metric(paths.length,"parcours"),metric(totalLessons,"leçons"),metric(totalExercises,"exercices"))),
+      renderResumePanel(lastActive)),
+    h("section",{id:"learning-paths",class:"learning-paths-section","aria-labelledby":"learning-paths-title"},
+      h("div",{class:"section-heading hub-heading"},h("div",{},h("span",{class:"eyebrow"},"TOUS LES PARCOURS"),h("h2",{id:"learning-paths-title"},"Choisis ce que tu veux apprendre")),para("Aucun prérequis n'est bloquant : les recommandations t'aident simplement à choisir un ordre confortable.","muted")),
+      h("div",{class:"path-grid path-grid-v2"},paths.map(p=>renderLearningPathCard(p)))));
+}
+
+function renderGlobalDashboard(){
+  const paths=allLearningPathSummaries();
+  const started=paths.filter(p=>p.started);
+  const completed=paths.filter(p=>p.percent>=100).length;
+  const overall=started.length?Math.round(started.reduce((n,p)=>n+p.percent,0)/started.length):0;
+  return h("div",{class:"page global-dashboard"},
+    h("p",{class:"crumbs"},link("/","Accueil")," / Mes parcours"),
+    h("section",{class:"global-dashboard-hero"},
+      h("div",{},h("span",{class:"eyebrow"},"DASHBOARD GLOBAL"),h("h1",{},started.length?"Continue ton apprentissage":"Ton apprentissage commence ici"),para(started.length?"Retrouve chaque progression sans qu'un parcours prenne la priorité sur les autres.":"Tu n'as encore commencé aucun parcours. Choisis celui qui t'intéresse : ta progression sera enregistrée séparément.","lead")),
+      h("div",{class:"global-dashboard-stats"},metric(started.length,"parcours commencés"),metric(completed,"terminés"),metric(overall+" %","moyenne"))),
+    started.length?h("section",{class:"block"},h("div",{class:"section-heading"},h("div",{},h("span",{class:"eyebrow"},"MES PARCOURS"),h("h2",{},"Reprendre exactement où tu t'es arrêté")),link("/","Découvrir un autre parcours →","btn small")),h("div",{class:"dashboard-path-list"},started.map(p=>h("article",{class:"dashboard-path-row path-card--"+p.id},h("span",{class:"path-mark","aria-hidden":"true"},p.mark),h("div",{class:"dashboard-path-copy"},h("div",{class:"dashboard-path-heading"},h("h3",{},p.title),h("strong",{},p.percent+" %")),p.lastLesson?para("Dernière leçon · "+p.lastLesson.title,"muted small"):para("Niveau "+p.currentLevel+" / "+p.levels,"muted small"),bar(p.percent)),h("div",{class:"dashboard-path-actions"},link(p.resumeHref,"Continuer","btn primary small"),link(p.href,"Vue d'ensemble","btn small")))))):h("section",{class:"empty-dashboard"},h("h2",{},"Choisis ton premier parcours"),para("Tous les langages restent visibles sur l'accueil. Rien n'est sélectionné automatiquement.","muted"),link("/","Voir les parcours →","btn primary big")));
+}
+
 function renderReactHome() {
   const percent=reactProgress(), rs=reactState();
   const last=REACT_LESSONS.find(l=>l.id===rs.lastLesson);
@@ -1164,6 +1358,94 @@ function renderHtmlProject(id){
 }
 
 
+// ═══════════ Parcours TypeScript ═══════════
+function typeScriptState(){
+  if(!state.typescript) state.typescript={lessonsDone:{},lastLesson:null,projects:{},exercises:{},notions:{},evaluations:{}};
+  if(!state.typescript.lessonsDone)state.typescript.lessonsDone={}; if(!state.typescript.projects)state.typescript.projects={}; if(!state.typescript.exercises)state.typescript.exercises={}; if(!state.typescript.notions)state.typescript.notions={}; if(!state.typescript.evaluations)state.typescript.evaluations={}; return state.typescript;
+}
+function typeScriptProjectState(id){const st=typeScriptState();if(!st.projects[id])st.projects[id]={done:false,draft:null};return st.projects[id];}
+function typeScriptLevelStats(level){const lessons=typeScriptLessonsForLevel(level),ld=lessons.filter(l=>typeScriptState().lessonsDone[l.id]).length,exs=typeScriptExercisesForLevel(level),ed=exs.filter(e=>getRecord(e.id).success).length,ev=(typeScriptState().evaluations[level]||{}).best||0,project=typeScriptProjectForLevel(level),pd=project&&typeScriptProjectState(project.id).done?1:0,total=lessons.length+exs.length+(typeScriptEvaluationForLevel(level).length?1:0)+(project?1:0),completed=ld+ed+(ev>=80?1:0)+pd;return{lessons,done:ld,coursePercent:lessons.length?Math.round(ld/lessons.length*100):0,percent:total?Math.round(completed/total*100):0,completed,total};}
+function typeScriptExerciseStatsForLevel(level){const exercises=typeScriptExercisesForLevel(level),solved=exercises.filter(e=>getRecord(e.id).success).length,review=exercises.filter(e=>getRecord(e.id).review).length;return{exercises,solved,review,percent:exercises.length?Math.round(solved/exercises.length*100):0};}
+function typeScriptProgress(){const rows=TYPESCRIPT_LEVELS.map(l=>typeScriptLevelStats(l.number)),done=rows.reduce((n,x)=>n+x.completed,0),total=rows.reduce((n,x)=>n+x.total,0);return total?Math.round(done/total*100):0;}
+
+function renderTypeScriptHome(){
+  const percent=typeScriptProgress(),st=typeScriptState(),last=TYPESCRIPT_LESSONS.find(l=>l.id===st.lastLesson),currentLevel=last?last.level:((TYPESCRIPT_LEVELS.find(level=>typeScriptLevelStats(level.number).percent<100)||TYPESCRIPT_LEVELS[TYPESCRIPT_LEVELS.length-1]||{number:1}).number),practiceSolved=TYPESCRIPT_EXERCISES.filter(e=>getRecord(e.id).success).length,doneProjects=TYPESCRIPT_PROJECTS.filter(p=>typeScriptProjectState(p.id).done).length;
+  return h("div",{class:"page dashboard-page typescript-dashboard"},h("p",{class:"crumbs"},link("/","Parcours")," / TypeScript"),
+    h("section",{class:"dashboard-hero"},h("div",{class:"dashboard-copy"},h("span",{class:"eyebrow"},"PARCOURS TYPESCRIPT"),h("h1",{},"Ajoute des types à ton JavaScript — et comprends vraiment les erreurs."),para("Compare JavaScript et TypeScript, lis de vrais diagnostics du compilateur, observe le JavaScript produit et corrige le code avant l'exécution.","lead"),h("div",{class:"callout prerequisite-callout"},h("strong",{},"Prérequis recommandé : JavaScript"),para("Variables, fonctions, objets et tableaux doivent déjà être familiers. Le parcours reste accessible, mais TypeScript est enseigné comme une couche construite sur JavaScript.","muted small")),h("div",{class:"toolbar"},link(last?"/typescript/cours/"+last.id:"/typescript/niveau/"+currentLevel,last?"Reprendre : "+last.title:"Commencer le Niveau "+currentLevel,"btn primary big"),link("/typescript/exercices","Pratiquer","btn big"))),
+      h("div",{class:"progress-orbit"},h("div",{class:"progress-ring",style:"--progress:"+percent},h("strong",{},percent+"%"),h("span",{},"parcours")),h("div",{class:"orbit-stats"},metric(practiceSolved,"exercices réussis"),metric(doneProjects,"projets terminés")))),
+    h("section",{class:"block roadmap-section"},h("div",{class:"section-heading"},h("div",{},h("span",{class:"eyebrow"},"ROADMAP TYPESCRIPT"),h("h2",{},TYPESCRIPT_LEVELS.length+" niveaux disponibles"))),h("ol",{class:"learning-roadmap"},TYPESCRIPT_LEVELS.map(level=>{const stats=typeScriptLevelStats(level.number);return h("li",{class:"roadmap-node "+(stats.percent===100?"done":level.number===currentLevel?"current":"")},h("div",{class:"roadmap-marker"},stats.percent===100?"✓":String(level.number)),h("article",{class:"roadmap-card"},h("div",{class:"roadmap-card-top"},h("span",{class:"eyebrow"},"NIVEAU "+level.number),h("span",{class:"badge"},stats.percent===100?"TERMINÉ":"DISPONIBLE")),h("h3",{},level.title),para(level.description,"muted"),para(typeScriptLessonsForLevel(level.number).length+" leçons · "+typeScriptExercisesForLevel(level.number).length+" exercices · "+typeScriptEvaluationForLevel(level.number).length+" questions · "+(typeScriptProjectForLevel(level.number)?1:0)+" projet","muted small"),h("div",{class:"roadmap-progress"},bar(stats.percent),h("small",{},stats.percent+" % du niveau")),link("/typescript/niveau/"+level.number,"Ouvrir le niveau →","btn small")));}))),
+    h("div",{class:"callout"},h("strong",{},"Parcours TypeScript complet"),para("Les 5 niveaux sont disponibles : des premiers diagnostics jusqu'à l'architecture TypeScript professionnelle, avec exercices, évaluations et projets à chaque étape.")));
+}
+function renderTypeScriptLevel(levelNumber){const level=TYPESCRIPT_LEVELS.find(x=>x.number===Number(levelNumber));if(!level)return renderNotFound();const lessons=typeScriptLessonsForLevel(level.number),stats=typeScriptLevelStats(level.number),practice=typeScriptExerciseStatsForLevel(level.number),project=typeScriptProjectForLevel(level.number),evaluation=typeScriptEvaluationForLevel(level.number);return h("div",{class:"page"},h("p",{class:"crumbs"},link("/typescript","TypeScript")," / Niveau "+level.number),pageTitle("Niveau "+level.number+" · "+level.title,level.description),h("section",{class:"dashboard-grid react-level-overview"},h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"COURS"),h("h2",{},stats.coursePercent+" %"),para(stats.done+" / "+lessons.length+" leçons terminées","muted"),bar(stats.coursePercent)),h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"PRATIQUE"),h("h2",{},practice.percent+" %"),para(practice.solved+" / "+practice.exercises.length+" exercices réussis"+(practice.review?" · "+practice.review+" à revoir":""),"muted"),bar(practice.percent))),h("div",{class:"callout"},h("strong",{},"Compilateur TypeScript réel · terminal contrôlé"),para("Les diagnostics et le JavaScript compilé proviennent du compilateur local embarqué. Les commandes npm/tsc du terminal sont simulées pour rester sûres.")),project?h("div",{class:"callout"},h("strong",{},"Projet final · "+project.title),para(project.description),link("/typescript/projet/"+project.id,"Ouvrir le projet","btn small")):null,evaluation.length?h("div",{class:"callout evaluation-callout"},h("strong",{},"Évaluation de fin de niveau"),para(evaluation.length+" questions pour vérifier compréhension des types, diagnostics, inférence et compilation."),link("/typescript/evaluation/"+level.number,"Passer l'évaluation","btn primary small")):null,h("ol",{class:"rows lessons"},lessons.map((lesson,index)=>{const exs=typeScriptExercisesForLesson(lesson.id),solved=exs.filter(ex=>getRecord(ex.id).success).length;return h("li",{class:"row"},h("span",{class:"num"},index+1),h("div",{class:"row-main"},link("/typescript/cours/"+lesson.id,lesson.title,"row-title"),para(lesson.objective,"muted small"),para(solved+" / "+exs.length+" exercices réussis","muted small")),h("span",{class:"status "+(typeScriptState().lessonsDone[lesson.id]?"ok":"todo")},typeScriptState().lessonsDone[lesson.id]?"✓ Terminé":"○ À faire"));})));}
+function renderTypeScriptLesson(id){const l=TYPESCRIPT_LESSONS.find(x=>x.id===id);if(!l)return renderNotFound();const st=typeScriptState();st.lastLesson=id;commit();const lessons=typeScriptLessonsForLevel(l.level),idx=lessons.indexOf(l),next=lessons[idx+1],exs=typeScriptExercisesForLesson(l.id),firstTodo=exs.find(ex=>!getRecord(ex.id).success)||exs[0],project=typeScriptProjectForLevel(l.level);const practice=h("section",{class:"block"},h("h2",{},"À toi de pratiquer"),h("ul",{class:"rows compact"},exs.map(ex=>h("li",{class:"row"},h("div",{class:"row-main"},link("/typescript/exercice/"+ex.id,(TYPE_LABELS[ex.type]||ex.label||ex.type)+" · "+ex.notion,"row-title")),statusBadge(exerciseStatus(ex))))),firstTodo?link("/typescript/exercice/"+firstTodo.id,"Commencer les exercices →","btn primary"):null);const nextLink=next?link("/typescript/cours/"+next.id,"Leçon suivante →","btn"):project?link("/typescript/projet/"+project.id,"Projet final →","btn"):link("/typescript","Retour au parcours","btn");return h("div",{class:"page"},h("p",{class:"crumbs"},link("/typescript","TypeScript")," / ",link("/typescript/niveau/"+l.level,"Niveau "+l.level)," / ",l.title),pageTitle(l.title,l.objective),h("article",{class:"sheet"},section(1,"Comprendre",...l.explanations.map(x=>para(x))),section(2,"Comparer et observer",codeBlock(l.code,true),h("ul",{},l.details.map(x=>h("li",{html:rich(x)})))),section(3,"Erreurs fréquentes",h("ul",{},l.mistakes.map(x=>h("li",{},x)))),section(4,"Réflexe TypeScript",h("div",{class:"callout"},para(l.shortcut)))),renderTypeScriptStudio(l.studio),practice,h("div",{class:"toolbar"},h("button",{class:"btn primary",type:"button",onclick:()=>{typeScriptState().lessonsDone[l.id]=true;commit();router();}},typeScriptState().lessonsDone[l.id]?"✓ Leçon terminée":"Marquer comme terminée"),nextLink));}
+function renderTypeScriptExerciseList(){return h("div",{class:"page"},h("p",{class:"crumbs"},link("/typescript","TypeScript")," / Exercices"),pageTitle("Exercices TypeScript",TYPESCRIPT_EXERCISES.length+" activités : diagnostics, inférence, correction de types et petits programmes compilables."),TYPESCRIPT_LESSONS.map(l=>h("section",{class:"block exercise-group"},h("h2",{},link("/typescript/cours/"+l.id,l.title)),h("ul",{class:"rows compact"},typeScriptExercisesForLesson(l.id).map(ex=>h("li",{class:"row"},h("div",{class:"row-main"},link("/typescript/exercice/"+ex.id,(TYPE_LABELS[ex.type]||ex.label||ex.type)+" · "+ex.notion,"row-title")),h("span",{class:"badge d"+ex.difficulty},DIFFICULTY_LABELS[ex.difficulty]),statusBadge(exerciseStatus(ex))))))));}
+function renderTypeScriptExercisePage(id){const ex=TYPESCRIPT_EXERCISES.find(e=>e.id===id);if(!ex)return renderNotFound();const lesson=TYPESCRIPT_LESSONS.find(l=>l.id===ex.lesson),siblings=typeScriptExercisesForLesson(ex.lesson),idx=siblings.indexOf(ex),next=siblings[idx+1],finish=h("div",{});return h("div",{class:"page"},h("p",{class:"crumbs"},link("/typescript","TypeScript")," / ",link("/typescript/cours/"+lesson.id,lesson.title)," / Exercice"),pageTitle(ex.notion,ex.question||ex.statement),renderExercise(ex,{onFinish:()=>finish.replaceChildren(next?link("/typescript/exercice/"+next.id,"Exercice suivant →","btn primary big"):link("/typescript/cours/"+lesson.id,"Retour au cours","btn primary big"))}),finish);}
+function renderTypeScriptRevision(){
+  const all=TYPESCRIPT_EXERCISES,st=typeScriptState(),priority=all.filter(ex=>getRecord(ex.id).review).sort((a,b)=>(getRecord(b.id).fails||0)-(getRecord(a.id).fails||0)),incomplete=all.filter(ex=>!getRecord(ex.id).success&&!getRecord(ex.id).review),fragile=Object.entries(st.notions||{}).filter(([,x])=>(x.ko||0)>0).sort((a,b)=>(b[1].ko||0)-(a[1].ko||0));
+  return h("div",{class:"page"},h("p",{class:"crumbs"},link("/typescript","TypeScript")," / Révision"),pageTitle("Révision TypeScript","Diagnostics ratés, notions fragiles, évaluations, projets et exercices non maîtrisés des niveaux disponibles sont regroupés ici."),
+    h("section",{class:"dashboard-grid"},h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"PRIORITÉ"),h("h2",{},priority.length),para("exercices marqués à revoir","muted")),h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"À PRATIQUER"),h("h2",{},priority.length+incomplete.length),para("activités non maîtrisées","muted")),h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"NOTIONS FRAGILES"),h("h2",{},fragile.length),para("notions avec erreurs","muted"))),
+    h("section",{class:"block"},h("h2",{},"À revoir en premier"),priority.length?h("ul",{class:"rows compact"},priority.map(ex=>h("li",{class:"row"},h("div",{class:"row-main"},link("/typescript/exercice/"+ex.id,ex.notion,"row-title"),para("Niveau "+ex.level+" · "+(getRecord(ex.id).fails||0)+" erreur(s)","muted small")),statusBadge(exerciseStatus(ex))))):empty("Aucun exercice marqué à revoir.")),
+    h("section",{class:"block"},h("h2",{},"Notions fragiles"),fragile.length?h("ul",{class:"rows compact"},fragile.map(([name,x])=>{const target=all.find(ex=>ex.notion===name&&!getRecord(ex.id).success)||all.find(ex=>ex.notion===name);return h("li",{class:"row"},h("div",{class:"row-main"},h("strong",{},name),para((x.ok||0)+" réussite(s) · "+(x.ko||0)+" erreur(s)","muted small")),target?link("/typescript/exercice/"+target.id,"Réviser","btn small"):null);})):empty("Aucune notion fragile détectée.")),
+    h("section",{class:"block"},h("h2",{},"Évaluations et projets"),h("div",{class:"project-roadmap"},TYPESCRIPT_LEVELS.map(level=>{const ev=(st.evaluations&&st.evaluations[level.number])||{},project=typeScriptProjectForLevel(level.number),projectDone=project?typeScriptProjectState(project.id).done:false;return h("article",{class:"path-card project-card"},h("span",{class:"badge"},"Niveau "+level.number),h("h3",{},level.title),para("Évaluation : "+(ev.best||0)+" % · objectif 80 %","muted small"),para("Projet : "+(projectDone?"terminé":"à faire / à valider"),"muted small"),h("div",{class:"toolbar"},link("/typescript/evaluation/"+level.number,"Passer l'évaluation","btn small"),project?link("/typescript/projet/"+project.id,projectDone?"Revoir le projet":"Ouvrir le projet","btn small primary"):null));}))),
+    h("section",{class:"block"},h("h2",{},"Tout ce qu'il reste à pratiquer"),[...priority,...incomplete].length?h("div",{},TYPESCRIPT_LEVELS.map(level=>{const rows=[...priority,...incomplete].filter(ex=>ex.level===level.number);return rows.length?h("div",{class:"exercise-group"},h("h3",{},"Niveau "+level.number+" · "+level.title),h("ul",{class:"rows compact"},rows.map(ex=>h("li",{class:"row"},h("div",{class:"row-main"},link("/typescript/exercice/"+ex.id,ex.notion,"row-title"),para(TYPE_LABELS[ex.type]||ex.label||ex.type,"muted small")),statusBadge(exerciseStatus(ex)))))):null;})):empty("Tous les exercices des niveaux disponibles sont maîtrisés.")));
+}
+function renderTypeScriptEvaluation(level){const questions=typeScriptEvaluationForLevel(level);if(!questions.length)return renderNotFound();const st=typeScriptState(),scoreText=h("p",{class:"muted"}),scoreBar=h("div",{}),result=h("div",{});let finished=0,success=0;function update(ok){finished++;if(ok)success++;const percent=Math.round(success/questions.length*100);scoreText.textContent=finished+" / "+questions.length+" questions terminées · "+percent+" %";scoreBar.replaceChildren(bar(Math.round(finished/questions.length*100)));if(finished===questions.length){if(!st.evaluations[level])st.evaluations[level]={best:0};st.evaluations[level].best=Math.max(st.evaluations[level].best||0,percent);commit();result.className="feedback "+(percent>=80?"ok":"ko");result.replaceChildren(h("strong",{},percent>=80?"Évaluation validée !":"À consolider."),para("Score : "+percent+" %. "+(percent>=80?"Les fondamentaux TypeScript sont maîtrisés.":"Utilise Révision puis retente l'évaluation.")));}}return h("div",{class:"page"},h("p",{class:"crumbs"},link("/typescript/niveau/"+level,"Niveau "+level)," / Évaluation"),pageTitle("Évaluation TypeScript · Niveau "+level,(TYPESCRIPT_LEVELS.find(x=>x.number===Number(level))||{}).description||"Évaluation du niveau TypeScript."),h("section",{class:"block evaluation-status"},scoreText,scoreBar,result),h("div",{class:"evaluation-list"},questions.map((q,index)=>h("section",{class:"block"},h("span",{class:"eyebrow"},"QUESTION "+(index+1)+" / "+questions.length),renderExercise(q,{quick:true,onFinish:update})))));}
+function renderTypeScriptProjects(){return h("div",{class:"page"},h("p",{class:"crumbs"},link("/typescript","TypeScript")," / Projets"),pageTitle("Projets TypeScript","Choisis le projet disponible. Cette page de sélection est présente dès le Niveau 1."),h("div",{class:"project-roadmap"},TYPESCRIPT_PROJECTS.map(project=>{const rec=typeScriptProjectState(project.id);return h("article",{class:"path-card project-card"},h("div",{class:"project-meta"},h("span",{class:"badge"},"Niveau "+project.level),h("span",{class:"status "+(rec.done?"ok":"todo")},rec.done?"✓ Terminé":"Disponible")),h("h2",{},project.title),para(project.description),link("/typescript/projet/"+project.id,rec.done?"Revoir le projet":"Ouvrir le projet","btn primary"));})));}
+function renderTypeScriptProject(id){const project=TYPESCRIPT_PROJECTS.find(p=>p.id===id);if(!project)return renderNotFound();const record=typeScriptProjectState(id),wb=renderTypeScriptWorkbench({code:record.draft||project.code,terminal:true}),result=h("div",{class:"project-checks","aria-live":"polite"},para("Validation : compilation réelle + structure TypeScript minimale. Les noms/textes libres restent libres.","muted small"));let saveTimer=null;wb.editor.addEventListener("input",()=>{clearTimeout(saveTimer);saveTimer=setTimeout(()=>{record.draft=wb.getCode();commit();},350);});async function verify(){const code=wb.getCode(),analysis=wb.analyze(),problems=analysis.diagnostics.map(d=>"TS"+d.code+" · ligne "+d.line+" : "+d.message);if(!problems.length)problems.push(...(project.validate(code,analysis)||[]));record.draft=code;if(!problems.length){record.done=true;commit();result.replaceChildren(h("p",{class:"success"},"✓ Projet validé : zéro diagnostic et contrats essentiels présents."));}else{commit();result.replaceChildren(h("p",{class:"muted"},"Encore quelques points à corriger :"),h("ul",{},problems.map(x=>h("li",{},x))));}}return h("div",{class:"page"},h("p",{class:"crumbs"},link("/typescript","TypeScript")," / ",link("/typescript/projets","Projets")," / ",project.title),pageTitle(project.title,project.description),h("div",{class:"callout"},h("strong",{},"Cahier des charges"),para(project.brief)),wb.node,h("div",{class:"toolbar"},h("button",{class:"btn primary",type:"button",onclick:verify},"Valider le projet")),result,h("div",{class:"callout"},h("strong",{},"À retenir"),para(project.retain)));}
+
+
+// ═══════════ Parcours Node.js ═══════════
+function nodeState(){
+  if(!state.node)state.node={lessonsDone:{},lastLesson:null,projects:{},exercises:{},notions:{},evaluations:{}};
+  if(!state.node.lessonsDone)state.node.lessonsDone={}; if(!state.node.projects)state.node.projects={}; if(!state.node.exercises)state.node.exercises={}; if(!state.node.notions)state.node.notions={}; if(!state.node.evaluations)state.node.evaluations={}; return state.node;
+}
+function nodeProjectState(id){const st=nodeState();if(!st.projects[id])st.projects[id]={done:false,draft:null};return st.projects[id];}
+function nodeLevelStats(level){const lessons=nodeLessonsForLevel(level),ld=lessons.filter(l=>nodeState().lessonsDone[l.id]).length,exs=nodeExercisesForLevel(level),ed=exs.filter(e=>getRecord(e.id).success).length,ev=(nodeState().evaluations[level]||{}).best||0,project=nodeProjectForLevel(level),pd=project&&nodeProjectState(project.id).done?1:0,total=lessons.length+exs.length+(nodeEvaluationForLevel(level).length?1:0)+(project?1:0),completed=ld+ed+(ev>=80?1:0)+pd;return{lessons,done:ld,coursePercent:lessons.length?Math.round(ld/lessons.length*100):0,percent:total?Math.round(completed/total*100):0,completed,total};}
+function nodeExerciseStatsForLevel(level){const exercises=nodeExercisesForLevel(level),solved=exercises.filter(e=>getRecord(e.id).success).length,review=exercises.filter(e=>getRecord(e.id).review).length;return{exercises,solved,review,percent:exercises.length?Math.round(solved/exercises.length*100):0};}
+function nodeProgress(){const rows=NODE_LEVELS.map(l=>nodeLevelStats(l.number)),done=rows.reduce((n,x)=>n+x.completed,0),total=rows.reduce((n,x)=>n+x.total,0);return total?Math.round(done/total*100):0;}
+
+function renderNodeHome(){
+  const percent=nodeProgress(),st=nodeState(),last=NODE_LESSONS.find(l=>l.id===st.lastLesson),currentLevel=last?last.level:((NODE_LEVELS.find(level=>nodeLevelStats(level.number).percent<100)||NODE_LEVELS[NODE_LEVELS.length-1]||{number:1}).number),practiceSolved=NODE_EXERCISES.filter(e=>getRecord(e.id).success).length,doneProjects=NODE_PROJECTS.filter(p=>nodeProjectState(p.id).done).length;
+  return h("div",{class:"page dashboard-page node-dashboard"},h("p",{class:"crumbs"},link("/","Parcours")," / Node.js"),
+    h("section",{class:"dashboard-hero"},h("div",{class:"dashboard-copy"},h("span",{class:"eyebrow"},"PARCOURS NODE.JS"),h("h1",{},"Fais sortir JavaScript du navigateur."),para("Travaille avec un terminal, des fichiers virtuels, des scripts sandboxés et un client HTTP pour progresser du CLI jusqu’à un backend Node.js professionnel.","lead"),h("div",{class:"callout prerequisite-callout"},h("strong",{},"Prérequis recommandé : JavaScript"),para("Variables, fonctions, objets, tableaux, Promises et JSON doivent être familiers. Le parcours reste consultable librement.","muted small")),h("div",{class:"toolbar"},link(last?"/node/cours/"+last.id:"/node/niveau/"+currentLevel,last?"Reprendre : "+last.title:"Commencer le Niveau "+currentLevel,"btn primary big"),link("/node/exercices","Pratiquer","btn big"))),
+      h("div",{class:"progress-orbit"},h("div",{class:"progress-ring",style:"--progress:"+percent},h("strong",{},percent+"%"),h("span",{},"parcours")),h("div",{class:"orbit-stats"},metric(practiceSolved,"exercices réussis"),metric(doneProjects,"projets terminés")))),
+    h("section",{class:"block roadmap-section"},h("div",{class:"section-heading"},h("div",{},h("span",{class:"eyebrow"},"ROADMAP NODE.JS"),h("h2",{},NODE_LEVELS.length+" niveaux disponibles"))),h("ol",{class:"learning-roadmap"},NODE_LEVELS.map(level=>{const stats=nodeLevelStats(level.number);return h("li",{class:"roadmap-node "+(stats.percent===100?"done":level.number===currentLevel?"current":"")},h("div",{class:"roadmap-marker"},stats.percent===100?"✓":String(level.number)),h("article",{class:"roadmap-card"},h("div",{class:"roadmap-card-top"},h("span",{class:"eyebrow"},"NIVEAU "+level.number),h("span",{class:"badge"},stats.percent===100?"TERMINÉ":"DISPONIBLE")),h("h3",{},level.title),para(level.description,"muted"),para(nodeLessonsForLevel(level.number).length+" leçons · "+nodeExercisesForLevel(level.number).length+" exercices · "+nodeEvaluationForLevel(level.number).length+" questions · "+(nodeProjectForLevel(level.number)?1:0)+" projet","muted small"),h("div",{class:"roadmap-progress"},bar(stats.percent),h("small",{},stats.percent+" % du niveau")),link("/node/niveau/"+level.number,"Ouvrir le niveau →","btn small")));}))),
+    h("div",{class:"callout"},h("strong",{},"Parcours Node.js complet"),para(NODE_LEVELS.length+" niveaux complets sont disponibles : runtime, fichiers, asynchronisme, HTTP, architecture backend et pratiques de production.")));
+}
+function renderNodeLevel(levelNumber){const level=NODE_LEVELS.find(x=>x.number===Number(levelNumber));if(!level)return renderNotFound();const lessons=nodeLessonsForLevel(level.number),stats=nodeLevelStats(level.number),practice=nodeExerciseStatsForLevel(level.number),project=nodeProjectForLevel(level.number),evaluation=nodeEvaluationForLevel(level.number);return h("div",{class:"page"},h("p",{class:"crumbs"},link("/node","Node.js")," / Niveau "+level.number),pageTitle("Niveau "+level.number+" · "+level.title,level.description),h("section",{class:"dashboard-grid react-level-overview"},h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"COURS"),h("h2",{},stats.coursePercent+" %"),para(stats.done+" / "+lessons.length+" leçons terminées","muted"),bar(stats.coursePercent)),h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"PRATIQUE"),h("h2",{},practice.percent+" %"),para(practice.solved+" / "+practice.exercises.length+" exercices réussis"+(practice.review?" · "+practice.review+" à revoir":""),"muted"),bar(practice.percent))),h("div",{class:"callout"},h("strong",{},"Terminal + système de fichiers virtuel"),para("Les commandes Node/npm sont contrôlées et le terminal partage réellement les mêmes fichiers que l'éditeur. Les scripts JavaScript s'exécutent dans un Worker sandboxé.")),project?h("div",{class:"callout"},h("strong",{},"Projet final · "+project.title),para(project.description),link("/node/projet/"+project.id,"Ouvrir le projet","btn small")):null,evaluation.length?h("div",{class:"callout evaluation-callout"},h("strong",{},"Évaluation de fin de niveau"),para(evaluation.length+" questions pour valider les compétences essentielles de ce niveau Node.js."),link("/node/evaluation/"+level.number,"Passer l'évaluation","btn primary small")):null,h("ol",{class:"rows lessons"},lessons.map((lesson,index)=>{const exs=nodeExercisesForLesson(lesson.id),solved=exs.filter(ex=>getRecord(ex.id).success).length;return h("li",{class:"row"},h("span",{class:"num"},index+1),h("div",{class:"row-main"},link("/node/cours/"+lesson.id,lesson.title,"row-title"),para(lesson.objective,"muted small"),para(solved+" / "+exs.length+" exercices réussis","muted small")),h("span",{class:"status "+(nodeState().lessonsDone[lesson.id]?"ok":"todo")},nodeState().lessonsDone[lesson.id]?"✓ Terminé":"○ À faire"));})))}
+function renderNodeLesson(id){const l=NODE_LESSONS.find(x=>x.id===id);if(!l)return renderNotFound();const st=nodeState();st.lastLesson=id;commit();const lessons=nodeLessonsForLevel(l.level),idx=lessons.indexOf(l),next=lessons[idx+1],exs=nodeExercisesForLesson(l.id),firstTodo=exs.find(ex=>!getRecord(ex.id).success)||exs[0],project=nodeProjectForLevel(l.level);const practice=h("section",{class:"block"},h("h2",{},"À toi de pratiquer"),h("ul",{class:"rows compact"},exs.map(ex=>h("li",{class:"row"},h("div",{class:"row-main"},link("/node/exercice/"+ex.id,(TYPE_LABELS[ex.type]||ex.label||ex.type)+" · "+ex.notion,"row-title")),statusBadge(exerciseStatus(ex))))),firstTodo?link("/node/exercice/"+firstTodo.id,"Commencer les exercices →","btn primary"):null);const nextLink=next?link("/node/cours/"+next.id,"Leçon suivante →","btn"):project?link("/node/projet/"+project.id,"Projet final →","btn"):link("/node","Retour au parcours","btn");return h("div",{class:"page"},h("p",{class:"crumbs"},link("/node","Node.js")," / ",link("/node/niveau/"+l.level,"Niveau "+l.level)," / ",l.title),pageTitle(l.title,l.objective),h("article",{class:"sheet"},section(1,"Comprendre",...l.explanations.map(x=>para(x))),section(2,"Observer",codeBlock(l.code,true),h("ul",{},l.details.map(x=>h("li",{html:rich(x)})))),section(3,"Erreurs fréquentes",h("ul",{},l.mistakes.map(x=>h("li",{},x)))),section(4,"Réflexe Node.js",h("div",{class:"callout"},para(l.shortcut)))),renderNodeStudio(l.studio),practice,h("div",{class:"toolbar"},h("button",{class:"btn primary",type:"button",onclick:()=>{nodeState().lessonsDone[l.id]=true;commit();router();}},nodeState().lessonsDone[l.id]?"✓ Leçon terminée":"Marquer comme terminée"),nextLink));}
+function renderNodeExerciseList(){return h("div",{class:"page"},h("p",{class:"crumbs"},link("/node","Node.js")," / Exercices"),pageTitle("Exercices Node.js",NODE_EXERCISES.length+" activités : terminal, fichiers, asynchronisme, HTTP, API, architecture, tests, sécurité et production."),NODE_LESSONS.map(l=>h("section",{class:"block exercise-group"},h("h2",{},link("/node/cours/"+l.id,l.title)),h("ul",{class:"rows compact"},nodeExercisesForLesson(l.id).map(ex=>h("li",{class:"row"},h("div",{class:"row-main"},link("/node/exercice/"+ex.id,(TYPE_LABELS[ex.type]||ex.label||ex.type)+" · "+ex.notion,"row-title")),h("span",{class:"badge d"+ex.difficulty},DIFFICULTY_LABELS[ex.difficulty]),statusBadge(exerciseStatus(ex))))))));}
+function renderNodeExercisePage(id){const ex=NODE_EXERCISES.find(e=>e.id===id);if(!ex)return renderNotFound();const lesson=NODE_LESSONS.find(l=>l.id===ex.lesson),siblings=nodeExercisesForLesson(ex.lesson),idx=siblings.indexOf(ex),next=siblings[idx+1],finish=h("div",{});return h("div",{class:"page"},h("p",{class:"crumbs"},link("/node","Node.js")," / ",link("/node/cours/"+lesson.id,lesson.title)," / Exercice"),pageTitle(ex.notion,ex.question||ex.statement),renderExercise(ex,{onFinish:()=>finish.replaceChildren(next?link("/node/exercice/"+next.id,"Exercice suivant →","btn primary big"):link("/node/cours/"+lesson.id,"Retour au cours","btn primary big"))}),finish);}
+function renderNodeRevision(){const all=NODE_EXERCISES,st=nodeState(),priority=all.filter(ex=>getRecord(ex.id).review).sort((a,b)=>(getRecord(b.id).fails||0)-(getRecord(a.id).fails||0)),incomplete=all.filter(ex=>!getRecord(ex.id).success&&!getRecord(ex.id).review),fragile=Object.entries(st.notions||{}).filter(([,x])=>(x.ko||0)>0).sort((a,b)=>(b[1].ko||0)-(a[1].ko||0));return h("div",{class:"page"},h("p",{class:"crumbs"},link("/node","Node.js")," / Révision"),pageTitle("Révision Node.js","Exercices ratés, notions fragiles, évaluation, projet et activités non maîtrisées sont regroupés ici."),h("section",{class:"dashboard-grid"},h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"PRIORITÉ"),h("h2",{},priority.length),para("exercices à revoir","muted")),h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"À PRATIQUER"),h("h2",{},priority.length+incomplete.length),para("activités non maîtrisées","muted")),h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"NOTIONS FRAGILES"),h("h2",{},fragile.length),para("notions avec erreurs","muted"))),h("section",{class:"block"},h("h2",{},"À revoir en premier"),priority.length?h("ul",{class:"rows compact"},priority.map(ex=>h("li",{class:"row"},h("div",{class:"row-main"},link("/node/exercice/"+ex.id,ex.notion,"row-title"),para((getRecord(ex.id).fails||0)+" erreur(s)","muted small")),statusBadge(exerciseStatus(ex))))):empty("Aucun exercice marqué à revoir.")),h("section",{class:"block"},h("h2",{},"Notions fragiles"),fragile.length?h("ul",{class:"rows compact"},fragile.map(([name,x])=>{const target=all.find(ex=>ex.notion===name&&!getRecord(ex.id).success)||all.find(ex=>ex.notion===name);return h("li",{class:"row"},h("div",{class:"row-main"},h("strong",{},name),para((x.ok||0)+" réussite(s) · "+(x.ko||0)+" erreur(s)","muted small")),target?link("/node/exercice/"+target.id,"Réviser","btn small"):null);})):empty("Aucune notion fragile détectée.")),h("section",{class:"block"},h("h2",{},"Évaluation et projet"),h("div",{class:"project-roadmap"},NODE_LEVELS.map(level=>{const ev=(st.evaluations&&st.evaluations[level.number])||{},project=nodeProjectForLevel(level.number),done=project?nodeProjectState(project.id).done:false;return h("article",{class:"path-card project-card"},h("span",{class:"badge"},"Niveau "+level.number),h("h3",{},level.title),para("Évaluation : "+(ev.best||0)+" % · objectif 80 %","muted small"),para("Projet : "+(done?"terminé":"à faire / à valider"),"muted small"),h("div",{class:"toolbar"},link("/node/evaluation/"+level.number,"Passer l'évaluation","btn small"),project?link("/node/projet/"+project.id,done?"Revoir le projet":"Ouvrir le projet","btn small primary"):null));}))),h("section",{class:"block"},h("h2",{},"Tout ce qu'il reste à pratiquer"),[...priority,...incomplete].length?h("div",{},NODE_LEVELS.map(level=>{const rows=[...priority,...incomplete].filter(ex=>ex.level===level.number);return rows.length?h("div",{class:"exercise-group"},h("h3",{},"Niveau "+level.number+" · "+level.title),h("ul",{class:"rows compact"},rows.map(ex=>h("li",{class:"row"},h("div",{class:"row-main"},link("/node/exercice/"+ex.id,ex.notion,"row-title"),para(TYPE_LABELS[ex.type]||ex.label||ex.type,"muted small")),statusBadge(exerciseStatus(ex)))))):null;})):empty("Tous les exercices disponibles sont maîtrisés.")));}
+function renderNodeEvaluation(level){const questions=nodeEvaluationForLevel(level);if(!questions.length)return renderNotFound();const st=nodeState(),scoreText=h("p",{class:"muted"}),scoreBar=h("div",{}),result=h("div",{});let finished=0,success=0;function update(ok){finished++;if(ok)success++;const percent=Math.round(success/questions.length*100);scoreText.textContent=finished+" / "+questions.length+" questions terminées · "+percent+" %";scoreBar.replaceChildren(bar(Math.round(finished/questions.length*100)));if(finished===questions.length){if(!st.evaluations[level])st.evaluations[level]={best:0};st.evaluations[level].best=Math.max(st.evaluations[level].best||0,percent);commit();result.className="feedback "+(percent>=80?"ok":"ko");result.replaceChildren(h("strong",{},percent>=80?"Évaluation validée !":"À consolider."),para("Score : "+percent+" %. "+(percent>=80?"Les bases Node.js du niveau sont maîtrisées.":"Utilise Révision puis retente l'évaluation.")));}}return h("div",{class:"page"},h("p",{class:"crumbs"},link("/node/niveau/"+level,"Niveau "+level)," / Évaluation"),pageTitle("Évaluation Node.js · Niveau "+level,(NODE_LEVELS.find(x=>x.number===Number(level))||{}).description||"Évaluation Node.js."),h("section",{class:"block evaluation-status"},scoreText,scoreBar,result),h("div",{class:"evaluation-list"},questions.map((q,index)=>h("section",{class:"block"},h("span",{class:"eyebrow"},"QUESTION "+(index+1)+" / "+questions.length),renderExercise(q,{quick:true,onFinish:update})))));}
+function renderNodeProjects(){return h("div",{class:"page"},h("p",{class:"crumbs"},link("/node","Node.js")," / Projets"),pageTitle("Projets Node.js","Choisis le projet disponible. Cette page de sélection existe dès le premier niveau."),h("div",{class:"project-roadmap"},NODE_PROJECTS.map(project=>{const rec=nodeProjectState(project.id);return h("article",{class:"path-card project-card"},h("div",{class:"project-meta"},h("span",{class:"badge"},"Niveau "+project.level),h("span",{class:"status "+(rec.done?"ok":"todo")},rec.done?"✓ Terminé":"Disponible")),h("h2",{},project.title),para(project.description),link("/node/projet/"+project.id,rec.done?"Revoir le projet":"Ouvrir le projet","btn primary"));})));}
+function renderNodeProject(id){const project=NODE_PROJECTS.find(p=>p.id===id);if(!project)return renderNotFound();const record=nodeProjectState(id),wb=renderNodeWorkbench({files:record.draft||project.files,guide:project.level===1?"Construis le CLI puis valide son comportement avec des arguments réels.":"Construis le projet dans le système de fichiers virtuel puis valide son comportement.",httpClient:project.httpClient===true,serverEntry:project.serverEntry}),result=h("div",{class:"project-checks","aria-live":"polite"},para(project.level>=3?"Validation comportementale : routes, status, headers et réponses HTTP sont testés via le client simulé.":"Validation comportementale : fichiers, script npm et sortie CLI. Les noms internes libres restent libres.","muted small"));let saveTimer=null;wb.editor.addEventListener("input",()=>{clearTimeout(saveTimer);saveTimer=setTimeout(()=>{record.draft=wb.getFiles();commit();},350);});async function verify(){if(project.validateCommand)await wb.executeCommand(project.validateCommand);const ctx={files:wb.getFiles(),readFile:n=>wb.readFile(n),fileExists:n=>wb.fileExists(n),dirExists:n=>wb.dirExists(n),history:wb.history,lastRun:wb.lastRun,sendHttpRequest:(method,url,body,headers)=>wb.sendHttpRequest(method,url,body,headers),packageJson(){const raw=wb.readFile("package.json");if(!raw)return null;try{return JSON.parse(raw);}catch(_){return null;}}};const problems=await project.validate(ctx)||[];record.draft=wb.getFiles();if(!problems.length){record.done=true;commit();result.replaceChildren(h("p",{class:"success"},project.level>=3?"✓ Projet validé : l’API répond correctement aux critères HTTP.":"✓ Projet validé : le CLI répond correctement aux critères."));}else{commit();result.replaceChildren(h("p",{class:"muted"},"Encore quelques points à corriger :"),h("ul",{},problems.map(x=>h("li",{},x))));}}return h("div",{class:"page"},h("p",{class:"crumbs"},link("/node","Node.js")," / ",link("/node/projets","Projets")," / ",project.title),pageTitle(project.title,project.description),h("div",{class:"callout"},h("strong",{},"Cahier des charges"),para(project.brief)),wb.node,h("div",{class:"toolbar"},h("button",{class:"btn primary",type:"button",onclick:verify},"Valider le projet")),result,h("div",{class:"callout"},h("strong",{},"À retenir"),para(project.retain)));}
+
+
+// ═══════════ Parcours SQL ═══════════
+function sqlState(){
+  if(!state.sql) state.sql={lessonsDone:{},lastLesson:null,projects:{},exercises:{},notions:{},evaluations:{}};
+  if(!state.sql.lessonsDone)state.sql.lessonsDone={}; if(!state.sql.projects)state.sql.projects={}; if(!state.sql.exercises)state.sql.exercises={}; if(!state.sql.notions)state.sql.notions={}; if(!state.sql.evaluations)state.sql.evaluations={}; return state.sql;
+}
+function sqlProjectState(id){const st=sqlState();if(!st.projects[id])st.projects[id]={done:false,draft:null};return st.projects[id];}
+function sqlExerciseStatsForLevel(level){const exercises=sqlExercisesForLevel(level),solved=exercises.filter(e=>getRecord(e.id).success).length,review=exercises.filter(e=>getRecord(e.id).review).length;return{exercises,solved,review,percent:exercises.length?Math.round(solved/exercises.length*100):0};}
+function sqlLevelStats(level){const lessons=sqlLessonsForLevel(level),ld=lessons.filter(l=>sqlState().lessonsDone[l.id]).length,exs=sqlExercisesForLevel(level),ed=exs.filter(e=>getRecord(e.id).success).length,ev=(sqlState().evaluations[level]||{}).best||0,project=sqlProjectForLevel(level),pd=project&&sqlProjectState(project.id).done?1:0,total=lessons.length+exs.length+(sqlEvaluationForLevel(level).length?1:0)+(project?1:0),completed=ld+ed+(ev>=80?1:0)+pd;return{lessons,done:ld,coursePercent:lessons.length?Math.round(ld/lessons.length*100):0,percent:total?Math.round(completed/total*100):0,completed,total};}
+function sqlProgress(){const rows=SQL_LEVELS.map(l=>sqlLevelStats(l.number)),done=rows.reduce((n,x)=>n+x.completed,0),total=rows.reduce((n,x)=>n+x.total,0);return total?Math.round(done/total*100):0;}
+function renderSqlHome(){const st=sqlState(),last=st.lastLesson?SQL_LESSONS.find(l=>l.id===st.lastLesson):null,currentLevel=last?last.level:((SQL_LEVELS.find(l=>sqlLevelStats(l.number).percent<100)||SQL_LEVELS[SQL_LEVELS.length-1]||{number:1}).number),practice=sqlExerciseStatsForLevel(currentLevel);return h("div",{class:"page"},
+  h("section",{class:"dashboard-hero"},h("div",{class:"dashboard-copy"},h("span",{class:"eyebrow"},"PARCOURS SQL · SQLITE"),h("h1",{},"Apprends SQL en interrogeant de vraies données."),para("Observe les tables, écris une requête, exécute-la dans SQLite et lis réellement le résultat ou l'erreur.","lead"),h("div",{class:"callout prerequisite-callout"},h("strong",{},"Moteur pédagogique : SQLite"),para("Le SQL Studio utilise sql.js pour exécuter de vraies requêtes SQLite dans le navigateur. Les différences de dialecte sont signalées lorsqu'elles deviennent importantes.","muted small")),h("div",{class:"toolbar"},link(last?"/sql/cours/"+last.id:"/sql/niveau/"+currentLevel,last?"Reprendre : "+last.title:"Commencer le Niveau "+currentLevel,"btn primary big"),link("/sql/exercices","Pratiquer","btn big")))),
+  h("section",{class:"dashboard-grid"},h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"PROGRESSION"),h("h2",{},sqlProgress()+" %"),para(SQL_LEVELS.length+" niveaux complets","muted"),bar(sqlProgress())),h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"PRATIQUE"),h("h2",{},practice.percent+" %"),para(practice.solved+" / "+practice.exercises.length+" exercices réussis","muted"),bar(practice.percent))),
+  h("section",{class:"block roadmap-section"},h("div",{class:"section-heading"},h("div",{},h("span",{class:"eyebrow"},"ROADMAP SQL"),h("h2",{},SQL_LEVELS.length+" niveaux complets"))),h("ol",{class:"learning-roadmap"},SQL_LEVELS.map(level=>{const stats=sqlLevelStats(level.number);return h("li",{class:"roadmap-node "+(stats.percent===100?"done":level.number===currentLevel?"current":"")},h("div",{class:"roadmap-marker"},stats.percent===100?"✓":String(level.number)),h("article",{class:"roadmap-card"},h("div",{class:"roadmap-card-top"},h("span",{class:"eyebrow"},"NIVEAU "+level.number),h("span",{class:"badge"},stats.percent===100?"TERMINÉ":"DISPONIBLE")),h("h3",{},level.title),para(level.description,"muted"),para(sqlLessonsForLevel(level.number).length+" leçons · "+sqlExercisesForLevel(level.number).length+" exercices · "+sqlEvaluationForLevel(level.number).length+" questions · "+(sqlProjectForLevel(level.number)?1:0)+" projet","muted small"),h("div",{class:"roadmap-progress"},bar(stats.percent),h("small",{},stats.percent+" % du niveau")),link("/sql/niveau/"+level.number,"Ouvrir le niveau →","btn small")));}))),
+  h("div",{class:"callout"},h("strong",{},"Parcours SQL complet"),para("Les 5 niveaux sont disponibles : lecture, filtres et agrégations, relations et JOIN, CRUD et schémas, puis SQL professionnel, optimisation et sécurité.")))}
+function renderSqlLevel(levelNumber){const level=SQL_LEVELS.find(x=>x.number===Number(levelNumber));if(!level)return renderNotFound();const lessons=sqlLessonsForLevel(level.number),stats=sqlLevelStats(level.number),practice=sqlExerciseStatsForLevel(level.number),project=sqlProjectForLevel(level.number),evaluation=sqlEvaluationForLevel(level.number);return h("div",{class:"page"},h("p",{class:"crumbs"},link("/sql","SQL")," / Niveau "+level.number),pageTitle("Niveau "+level.number+" · "+level.title,level.description),h("section",{class:"dashboard-grid react-level-overview"},h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"COURS"),h("h2",{},stats.coursePercent+" %"),para(stats.done+" / "+lessons.length+" leçons terminées","muted"),bar(stats.coursePercent)),h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"PRATIQUE"),h("h2",{},practice.percent+" %"),para(practice.solved+" / "+practice.exercises.length+" exercices réussis"+(practice.review?" · "+practice.review+" à revoir":""),"muted"),bar(practice.percent))),h("div",{class:"callout"},h("strong",{},"SQL Studio · SQLite réel"),para("Les requêtes sont exécutées dans une base isolée. La validation observe le résultat généré, pas une égalité textuelle avec la correction.")),project?h("div",{class:"callout"},h("strong",{},"Projet final · "+project.title),para(project.description),link("/sql/projet/"+project.id,"Ouvrir le projet","btn small")):null,evaluation.length?h("div",{class:"callout evaluation-callout"},h("strong",{},"Évaluation de fin de niveau"),para(evaluation.length+" questions pour vérifier les fondamentaux SQL."),link("/sql/evaluation/"+level.number,"Passer l'évaluation","btn primary small")):null,h("ol",{class:"rows lessons"},lessons.map((lesson,index)=>{const exs=sqlExercisesForLesson(lesson.id),solved=exs.filter(ex=>getRecord(ex.id).success).length;return h("li",{class:"row"},h("span",{class:"num"},index+1),h("div",{class:"row-main"},link("/sql/cours/"+lesson.id,lesson.title,"row-title"),para(lesson.objective,"muted small"),para(solved+" / "+exs.length+" exercices réussis","muted small")),h("span",{class:"status "+(sqlState().lessonsDone[lesson.id]?"ok":"todo")},sqlState().lessonsDone[lesson.id]?"✓ Terminé":"○ À faire"));}))) }
+function renderSqlLesson(id){const l=SQL_LESSONS.find(x=>x.id===id);if(!l)return renderNotFound();const st=sqlState();st.lastLesson=id;commit();const lessons=sqlLessonsForLevel(l.level),idx=lessons.indexOf(l),next=lessons[idx+1],exs=sqlExercisesForLesson(l.id),firstTodo=exs.find(ex=>!getRecord(ex.id).success)||exs[0],project=sqlProjectForLevel(l.level);const practice=h("section",{class:"block"},h("h2",{},"À toi de pratiquer"),h("ul",{class:"rows compact"},exs.map(ex=>h("li",{class:"row"},h("div",{class:"row-main"},link("/sql/exercice/"+ex.id,(TYPE_LABELS[ex.type]||ex.label||ex.type)+" · "+ex.notion,"row-title")),statusBadge(exerciseStatus(ex))))),firstTodo?link("/sql/exercice/"+firstTodo.id,"Commencer les exercices →","btn primary"):null);const nextLink=next?link("/sql/cours/"+next.id,"Leçon suivante →","btn"):project?link("/sql/projet/"+project.id,"Projet final →","btn"):link("/sql","Retour au parcours","btn");return h("div",{class:"page"},h("p",{class:"crumbs"},link("/sql","SQL")," / ",link("/sql/niveau/"+l.level,"Niveau "+l.level)," / ",l.title),pageTitle(l.title,l.objective),h("article",{class:"sheet"},section(1,"Comprendre",...l.explanations.map(x=>para(x))),section(2,"Observer",codeBlock(l.code,true),h("ul",{},l.details.map(x=>h("li",{html:rich(x)})))),section(3,"Erreurs fréquentes",h("ul",{},l.mistakes.map(x=>h("li",{},x)))),section(4,"Réflexe SQL",h("div",{class:"callout"},para(l.shortcut)))),renderSqlStudio(l.studio),practice,h("div",{class:"toolbar"},h("button",{class:"btn primary",type:"button",onclick:()=>{sqlState().lessonsDone[l.id]=true;commit();router();}},sqlState().lessonsDone[l.id]?"✓ Leçon terminée":"Marquer comme terminée"),nextLink));}
+function renderSqlExerciseList(){return h("div",{class:"page"},h("p",{class:"crumbs"},link("/sql","SQL")," / Exercices"),pageTitle("Exercices SQL",SQL_EXERCISES.length+" activités : lecture de schéma, requêtes, filtres, agrégations, résultats et debugging SQLite."),SQL_LESSONS.map(l=>h("section",{class:"block exercise-group"},h("h2",{},link("/sql/cours/"+l.id,l.title)),h("ul",{class:"rows compact"},sqlExercisesForLesson(l.id).map(ex=>h("li",{class:"row"},h("div",{class:"row-main"},link("/sql/exercice/"+ex.id,(TYPE_LABELS[ex.type]||ex.label||ex.type)+" · "+ex.notion,"row-title")),h("span",{class:"badge d"+ex.difficulty},DIFFICULTY_LABELS[ex.difficulty]),statusBadge(exerciseStatus(ex))))))));}
+function renderSqlExercisePage(id){const ex=SQL_EXERCISES.find(e=>e.id===id);if(!ex)return renderNotFound();const lesson=SQL_LESSONS.find(l=>l.id===ex.lesson),siblings=sqlExercisesForLesson(ex.lesson),idx=siblings.indexOf(ex),next=siblings[idx+1],finish=h("div",{});return h("div",{class:"page"},h("p",{class:"crumbs"},link("/sql","SQL")," / ",link("/sql/cours/"+lesson.id,lesson.title)," / Exercice"),pageTitle(ex.notion,ex.question||ex.statement),renderExercise(ex,{onFinish:()=>finish.replaceChildren(next?link("/sql/exercice/"+next.id,"Exercice suivant →","btn primary big"):link("/sql/cours/"+lesson.id,"Retour au cours","btn primary big"))}),finish);}
+function renderSqlRevision(){const st=sqlState(),all=SQL_EXERCISES,priority=all.filter(ex=>getRecord(ex.id).review).sort((a,b)=>(getRecord(b.id).fails||0)-(getRecord(a.id).fails||0)),incomplete=all.filter(ex=>!getRecord(ex.id).success&&!getRecord(ex.id).review),fragile=Object.entries(st.notions||{}).filter(([,x])=>(x.ko||0)>0).sort((a,b)=>(b[1].ko||0)-(a[1].ko||0));return h("div",{class:"page"},h("p",{class:"crumbs"},link("/sql","SQL")," / Révision"),pageTitle("Révisions SQL","Tout ce qui reste à consolider, sans liste arbitrairement tronquée."),h("section",{class:"dashboard-grid"},h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"PRIORITÉ"),h("h2",{},priority.length),para("exercices à revoir","muted")),h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"À PRATIQUER"),h("h2",{},priority.length+incomplete.length),para("activités non maîtrisées","muted")),h("article",{class:"stats-card"},h("span",{class:"eyebrow"},"NOTIONS FRAGILES"),h("h2",{},fragile.length),para("notions avec erreurs","muted"))),h("section",{class:"block"},h("h2",{},"À revoir en premier"),priority.length?h("ul",{class:"rows compact"},priority.map(ex=>h("li",{class:"row"},h("div",{class:"row-main"},link("/sql/exercice/"+ex.id,ex.notion,"row-title"),para((getRecord(ex.id).fails||0)+" erreur(s)","muted small")),statusBadge(exerciseStatus(ex))))):empty("Aucun exercice marqué à revoir.")),h("section",{class:"block"},h("h2",{},"Évaluation et projet"),h("div",{class:"project-roadmap"},SQL_LEVELS.map(level=>{const ev=(st.evaluations&&st.evaluations[level.number])||{},project=sqlProjectForLevel(level.number),done=project?sqlProjectState(project.id).done:false;return h("article",{class:"path-card project-card"},h("span",{class:"badge"},"Niveau "+level.number),h("h3",{},level.title),para("Évaluation : "+(ev.best||0)+" % · objectif 80 %","muted small"),para("Projet : "+(done?"terminé":"à faire / à valider"),"muted small"),h("div",{class:"toolbar"},link("/sql/evaluation/"+level.number,"Passer l'évaluation","btn small"),project?link("/sql/projet/"+project.id,done?"Revoir le projet":"Ouvrir le projet","btn small primary"):null));}))),h("section",{class:"block"},h("h2",{},"Tout ce qu'il reste à pratiquer"),[...priority,...incomplete].length?h("ul",{class:"rows compact"},[...priority,...incomplete].map(ex=>h("li",{class:"row"},h("div",{class:"row-main"},link("/sql/exercice/"+ex.id,ex.notion,"row-title"),para(TYPE_LABELS[ex.type]||ex.label||ex.type,"muted small")),statusBadge(exerciseStatus(ex))))):empty("Tous les exercices disponibles sont maîtrisés.")));}
+function renderSqlEvaluation(level){const questions=sqlEvaluationForLevel(level);if(!questions.length)return renderNotFound();const st=sqlState(),scoreText=h("p",{class:"muted"}),scoreBar=h("div",{}),result=h("div",{});let finished=0,success=0;function update(ok){finished++;if(ok)success++;const percent=Math.round(success/questions.length*100);scoreText.textContent=finished+" / "+questions.length+" questions terminées · "+percent+" %";scoreBar.replaceChildren(bar(Math.round(finished/questions.length*100)));if(finished===questions.length){if(!st.evaluations[level])st.evaluations[level]={best:0};st.evaluations[level].best=Math.max(st.evaluations[level].best||0,percent);commit();result.className="feedback "+(percent>=80?"ok":"ko");result.replaceChildren(h("strong",{},percent>=80?"Évaluation validée !":"À consolider."),para("Score : "+percent+" %. "+(percent>=80?"Les fondamentaux SQL sont maîtrisés.":"Utilise Révision puis retente l'évaluation.")));}}return h("div",{class:"page"},h("p",{class:"crumbs"},link("/sql/niveau/"+level,"Niveau "+level)," / Évaluation"),pageTitle("Évaluation SQL · Niveau "+level,(SQL_LEVELS.find(x=>x.number===Number(level))||{}).description||"Évaluation SQL."),h("section",{class:"block evaluation-status"},scoreText,scoreBar,result),h("div",{class:"evaluation-list"},questions.map((q,index)=>h("section",{class:"block"},h("span",{class:"eyebrow"},"QUESTION "+(index+1)+" / "+questions.length),renderExercise(q,{quick:true,onFinish:update})))));}
+function renderSqlProjects(){return h("div",{class:"page"},h("p",{class:"crumbs"},link("/sql","SQL")," / Projets"),pageTitle("Projets SQL","Choisis le projet disponible."),h("div",{class:"project-roadmap"},SQL_PROJECTS.map(project=>{const rec=sqlProjectState(project.id);return h("article",{class:"path-card project-card"},h("div",{class:"project-meta"},h("span",{class:"badge"},"Niveau "+project.level),h("span",{class:"status "+(rec.done?"ok":"todo")},rec.done?"✓ Terminé":"Disponible")),h("h2",{},project.title),para(project.description),link("/sql/projet/"+project.id,rec.done?"Revoir le projet":"Ouvrir le projet","btn primary"));})));}
+function renderSqlProject(id){const project=SQL_PROJECTS.find(p=>p.id===id);if(!project)return renderNotFound();const record=sqlProjectState(id),wb=renderSqlWorkbench({setup:project.setup,query:record.draft||project.query,guide:"Explore la base puis construis la requête finale demandée."}),result=h("div",{class:"project-checks","aria-live":"polite"},para("Validation par résultat SQLite, complétée par des critères structurels uniquement lorsque la notion l’exige : les variantes équivalentes restent acceptées.","muted small"));wb.editor.addEventListener("input",()=>{record.draft=wb.getQuery();commit();});async function verify(){const execution=await wb.run();if(!execution.ok){result.replaceChildren(h("p",{class:"error"},execution.error));return;}const problems=await project.validate({query:execution.query,result:execution.result,error:null})||[];record.draft=wb.getQuery();if(!problems.length){record.done=true;commit();result.replaceChildren(h("p",{class:"success"},"✓ Projet validé : le résultat SQL correspond au besoin métier."));}else{commit();result.replaceChildren(h("p",{class:"muted"},"Encore quelques points à corriger :"),h("ul",{},problems.map(x=>h("li",{},x))));}}return h("div",{class:"page"},h("p",{class:"crumbs"},link("/sql","SQL")," / ",link("/sql/projets","Projets")," / ",project.title),pageTitle(project.title,project.description),h("div",{class:"callout"},h("strong",{},"Cahier des charges"),para(project.brief)),wb.node,h("div",{class:"toolbar"},h("button",{class:"btn primary",type:"button",onclick:verify},"Valider le projet")),result,h("div",{class:"callout"},h("strong",{},"À retenir"),para(project.retain)));}
+
+
 function renderNotFound() {
   return h("div", { class: "page" }, pageTitle("Page introuvable", "Cette page n’existe pas."), link("/", "Retour à l’accueil", "btn primary"));
 }
@@ -1171,6 +1453,7 @@ function renderNotFound() {
 // ═══════════ Routeur ═══════════
 const routes = [
   { re: /^\/$/, view: renderHub },
+  { re: /^\/dashboard$/, view: renderGlobalDashboard },
   { re: /^\/javascript$/, view: renderJavascriptHome },
   { re: /^\/react$/, view: renderReactHome },
   { re: /^\/react\/niveau\/(\d+)$/, view: renderReactLevel },
@@ -1199,6 +1482,33 @@ const routes = [
   { re: /^\/html\/evaluation\/(\d+)$/, view: renderHtmlEvaluation },
   { re: /^\/html\/projets$/, view: renderHtmlProjects },
   { re: /^\/html\/projet\/([\w-]+)$/, view: renderHtmlProject },
+  { re: /^\/typescript$/, view: renderTypeScriptHome },
+  { re: /^\/typescript\/niveau\/(\d+)$/, view: renderTypeScriptLevel },
+  { re: /^\/typescript\/cours\/([\w-]+)$/, view: renderTypeScriptLesson },
+  { re: /^\/typescript\/exercices$/, view: renderTypeScriptExerciseList },
+  { re: /^\/typescript\/exercice\/([\w-]+)$/, view: renderTypeScriptExercisePage },
+  { re: /^\/typescript\/revision$/, view: renderTypeScriptRevision },
+  { re: /^\/typescript\/evaluation\/(\d+)$/, view: renderTypeScriptEvaluation },
+  { re: /^\/typescript\/projets$/, view: renderTypeScriptProjects },
+  { re: /^\/typescript\/projet\/([\w-]+)$/, view: renderTypeScriptProject },
+  { re: /^\/sql$/, view: renderSqlHome },
+  { re: /^\/sql\/niveau\/(\d+)$/, view: renderSqlLevel },
+  { re: /^\/sql\/cours\/([\w-]+)$/, view: renderSqlLesson },
+  { re: /^\/sql\/exercices$/, view: renderSqlExerciseList },
+  { re: /^\/sql\/exercice\/([\w-]+)$/, view: renderSqlExercisePage },
+  { re: /^\/sql\/revision$/, view: renderSqlRevision },
+  { re: /^\/sql\/evaluation\/(\d+)$/, view: renderSqlEvaluation },
+  { re: /^\/sql\/projets$/, view: renderSqlProjects },
+  { re: /^\/sql\/projet\/([\w-]+)$/, view: renderSqlProject },
+  { re: /^\/node$/, view: renderNodeHome },
+  { re: /^\/node\/niveau\/(\d+)$/, view: renderNodeLevel },
+  { re: /^\/node\/cours\/([\w-]+)$/, view: renderNodeLesson },
+  { re: /^\/node\/exercices$/, view: renderNodeExerciseList },
+  { re: /^\/node\/exercice\/([\w-]+)$/, view: renderNodeExercisePage },
+  { re: /^\/node\/revision$/, view: renderNodeRevision },
+  { re: /^\/node\/evaluation\/(\d+)$/, view: renderNodeEvaluation },
+  { re: /^\/node\/projets$/, view: renderNodeProjects },
+  { re: /^\/node\/projet\/([\w-]+)$/, view: renderNodeProject },
   { re: /^\/cours$/, view: renderCourses },
   { re: /^\/cours\/([\w-]+)$/, view: renderLesson },
   { re: /^\/exercices$/, view: renderExerciseList },
@@ -1212,6 +1522,8 @@ const routes = [
 
 function router() {
   const path = location.hash.replace(/^#/, "") || "/";
+  const activePathId=routeLearningPathId(path);
+  if(activePathId && state.lastActiveLearningPath!==activePathId){ state.lastActiveLearningPath=activePathId; commit(); }
   let view = null;
   for (const route of routes) {
     const match = path.match(route.re);

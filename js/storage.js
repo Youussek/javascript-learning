@@ -9,6 +9,7 @@ function defaultState() {
   return {
     version: 1,
     theme: "dark",
+    lastActiveLearningPath: null, // dernier parcours explicitement ouvert ; ne provoque jamais de redirection automatique
     lastLesson: null,   // dernier cours ouvert, ex. "variables"
     lessonsDone: {},    // cours terminés, ex. { variables: true }
     exercises: {},      // un dossier par exercice : { "var-1": { attempts, fails, success, review, correctionSeen, points } }
@@ -16,6 +17,9 @@ function defaultState() {
     react: { lessonsDone: {}, lastLesson: null, projects: {}, exercises: {}, notions: {}, evaluations: {} }, // progression du parcours React
     css: { lessonsDone: {}, lastLesson: null, projects: {}, exercises: {}, notions: {}, evaluations: {} }, // progression du parcours CSS
     html: { lessonsDone: {}, lastLesson: null, projects: {}, exercises: {}, notions: {}, evaluations: {} }, // progression du parcours HTML
+    typescript: { lessonsDone: {}, lastLesson: null, projects: {}, exercises: {}, notions: {}, evaluations: {} }, // progression du parcours TypeScript
+    node: { lessonsDone: {}, lastLesson: null, projects: {}, exercises: {}, notions: {}, evaluations: {} }, // progression du parcours Node.js
+    sql: { lessonsDone: {}, lastLesson: null, projects: {}, exercises: {}, notions: {}, evaluations: {} }, // progression du parcours SQL
     projects: {},       // un dossier par projet : { steps: {0: true}, fails: 2, done: false, correctionSeen: false, draft: {...} }
   };
 }

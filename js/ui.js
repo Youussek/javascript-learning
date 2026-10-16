@@ -42,10 +42,13 @@ function renderBlocks(blocks) {
 
 // ─── Bloc de code (lecture seule) ───
 function codeBlock(code, numbered) {
-  const pre = h("pre", { class: "code" + (numbered ? " numbered" : "") });
+  const pre = h("pre", { class: "code code-with-help" + (numbered ? " numbered" : "") });
   code.split("\n").forEach((line) => {
-    pre.append(h("span", { class: "line" }, line === "" ? " " : line));
+    const row = h("span", { class: "line" });
+    row.append(typeof renderCodeHelpText === "function" ? renderCodeHelpText(line === "" ? " " : line) : document.createTextNode(line === "" ? " " : line));
+    pre.append(row);
   });
+  if (typeof activateCodeHelp === "function") queueMicrotask(() => activateCodeHelp(pre));
   return pre;
 }
 
@@ -58,7 +61,9 @@ function makeEditor(value, rows, onRun, language) {
     autocomplete: "off", "aria-label": "Éditeur de code JavaScript",
   });
   editor.value = value;
-  return enhanceEditor(editor, onRun, language);
+  const enhanced = enhanceEditor(editor, onRun, language);
+  if (typeof attachEditorCodeHelp === "function") attachEditorCodeHelp(enhanced);
+  return enhanced;
 }
 
 // Petit aide-mémoire des raccourcis de l'éditeur.
@@ -138,7 +143,7 @@ function renderPlayground(code, options) {
 
 const TYPE_LABELS = {
   qcm: "QCM", vf: "Vrai ou faux", predict: "Prédire le résultat",
-  fill: "Compléter le code", code: "Écrire du code", reactcode: "Atelier React", lab: "Atelier page web",
+  fill: "Compléter le code", code: "Écrire du code", reactcode: "Atelier React", tscode: "Playground TypeScript", nodecode: "Node Lab", sqlcode: "Atelier SQL", lab: "Atelier page web",
 };
 const DIFFICULTY_LABELS = { 1: "Facile", 2: "Moyen", 3: "Difficile" };
 const HINT_TITLES = ["aide légère", "la notion à utiliser", "une partie de la solution"];
@@ -318,6 +323,77 @@ function buildLabBody(ex) {
   };
 }
 
+
+
+function buildNodeCodeBody(ex) {
+  const workbench = renderNodeWorkbench({ files: ex.files, guide: "Modifie le projet virtuel puis utilise le terminal pour tester ton comportement.", httpClient: ex.httpClient===true, serverEntry: ex.serverEntry });
+  return {
+    node: workbench.node,
+    reset() { workbench.reset(); },
+    lock() { workbench.lock(); },
+    async evaluate() {
+      if (!workbench.changed()) return { invalid: true, message: "Modifie les fichiers ou utilise le terminal avant de valider." };
+      if (ex.validateCommand) await workbench.executeCommand(ex.validateCommand);
+      const ctx = {
+        files: workbench.getFiles(),
+        readFile: (name) => workbench.readFile(name),
+        fileExists: (name) => workbench.fileExists(name),
+        dirExists: (name) => workbench.dirExists(name),
+        writeFile: (name, code) => workbench.writeFile(name, code),
+        history: workbench.history,
+        lastRun: workbench.lastRun,
+        sendHttpRequest: (method,url,body,headers) => workbench.sendHttpRequest(method,url,body,headers),
+        packageJson() {
+          const raw = workbench.readFile("package.json");
+          if (!raw) return null;
+          try { return JSON.parse(raw); } catch (_) { return null; }
+        }
+      };
+      const problems = typeof ex.validate === "function" ? (await ex.validate(ctx) || []) : [];
+      if (problems.length) return { ok: false, message: "Le projet virtuel ne respecte pas encore tout l’objectif.", details: problems };
+      return { ok: true };
+    }
+  };
+}
+function buildSqlCodeBody(ex) {
+  const workbench = renderSqlWorkbench({ setup: ex.setup, query: ex.query, params: ex.params, guide: "Exécute la requête, lis le résultat ou le diagnostic, puis corrige-la si nécessaire." });
+  return {
+    node: workbench.node,
+    reset() { workbench.reset(); },
+    lock() { workbench.lock(); },
+    async evaluate() {
+      await workbench.ready;
+      if (!workbench.changed()) return { invalid: true, message: "Modifie la requête ou exécute une tentative avant de valider." };
+      const execution = await workbench.run();
+      if (!execution.ok) return { ok: false, message: "SQLite signale encore une erreur.", details: [execution.error] };
+      const ctx = { query: execution.query, result: execution.result, error: execution.error, params: execution.params };
+      const problems = typeof ex.validate === "function" ? (await ex.validate(ctx) || []) : [];
+      if (problems.length) return { ok: false, message: "La requête s'exécute, mais le résultat ne correspond pas encore à l'objectif.", details: problems };
+      return { ok: true };
+    }
+  };
+}
+
+function buildTypeScriptCodeBody(ex) {
+  const workbench = renderTypeScriptWorkbench({ code: ex.code, terminal: true, filename: "main.ts" });
+  return {
+    node: workbench.node,
+    reset() { workbench.reset(); },
+    lock() { workbench.lock(); },
+    async evaluate() {
+      const code = workbench.getCode();
+      if (code.trim() === workbench.starter.trim()) return { invalid: true, message: "Modifie le code avant de valider." };
+      const analysis = workbench.analyze();
+      if (analysis.diagnostics.length) {
+        return { ok: false, message: "Le compilateur TypeScript signale encore des erreurs.", details: analysis.diagnostics.map(d => "TS" + d.code + " · ligne " + d.line + ": " + d.message) };
+      }
+      const problems = typeof ex.validate === "function" ? (ex.validate(code, analysis) || []) : [];
+      if (problems.length) return { ok: false, message: "Le code compile, mais il ne respecte pas encore tout l'objectif de l'exercice.", details: problems };
+      return { ok: true };
+    }
+  };
+}
+
 function buildBody(ex) {
   if (ex.type === "qcm") return buildChoiceBody(ex, ex.options, ex.answer, (i) => ex.why && ex.why[i]);
   if (ex.type === "vf") return buildChoiceBody(ex, ["Vrai", "Faux"], ex.answer ? 0 : 1, () => ex.why);
@@ -325,6 +401,9 @@ function buildBody(ex) {
   if (ex.type === "fill") return buildFillBody(ex);
   if (ex.type === "lab") return buildLabBody(ex);
   if (ex.type === "reactcode") return buildReactCodeBody(ex);
+  if (ex.type === "tscode") return buildTypeScriptCodeBody(ex);
+  if (ex.type === "nodecode") return buildNodeCodeBody(ex);
+  if (ex.type === "sqlcode") return buildSqlCodeBody(ex);
   return buildCodeBody(ex);
 }
 
@@ -343,6 +422,9 @@ function solutionNode(ex) {
     return h("div", {}, ex.solution.map((file) => h("div", {}, h("p", { class: "muted small" }, file.name), codeBlock(file.code))));
   }
   if (ex.type === "reactcode") return codeBlock(ex.solution || "");
+  if (ex.type === "tscode") return codeBlock(ex.solution || "");
+  if (ex.type === "nodecode") return h("div", {}, (ex.solution || []).map((file) => h("div", {}, h("p", { class: "muted small" }, file.name), codeBlock(file.code))));
+  if (ex.type === "sqlcode") return codeBlock(ex.solution || "");
   return codeBlock(ex.solution);
 }
 
