@@ -901,3 +901,97 @@ La plateforme possède désormais une progression personnelle globale distincte 
 La configuration principale vit dans `js/gamification.js` (`GAMIFICATION_CONFIG`, catalogue de badges et moteur de synchronisation). La progression pédagogique reste la source de vérité ; la gamification ne stocke que les récompenses déjà attribuées et les statistiques globales.
 
 Cette version étant une application locale sans authentification ni backend, les garanties anti-triche sont limitées au calcul à partir des événements pédagogiques et à l'idempotence locale. Une sécurité forte contre la modification volontaire du `localStorage` nécessiterait une validation serveur.
+
+## Parcours adaptatif
+
+La plateforme possède désormais une couche de recommandations adaptatives commune aux 7 parcours. Elle ne remplace pas la progression pédagogique et ne verrouille aucun contenu. Le moteur lit les données déjà disponibles (réussites, erreurs, points, corrections, statut À revoir, échéances de révision espacée et leçons terminées) pour calculer un indice de maîtrise par leçon.
+
+La page `#/adaptatif` classe les recommandations en trois actions : **Renforcer**, **Consolider** et **Continuer**. Une session courte sélectionne au maximum cinq actions et diversifie les parcours lorsque plusieurs technologies nécessitent de l'attention. Chaque recommandation expose sa justification afin que la décision du moteur reste compréhensible.
+
+## Projets fil rouge
+
+Cahier Code propose désormais une couche de projets transversaux via `#/fil-rouge`.
+
+Deux fils rouges sont fournis :
+
+- **DevBoard Full Stack** : HTML → CSS → JavaScript → React → TypeScript → Node.js → SQL → intégration finale ;
+- **DataPulse** : JavaScript → TypeScript → Node.js → SQL → intégration analytique.
+
+Chaque étape possède un cahier des charges, une checklist, un brouillon sauvegardé localement, un parcours recommandé et un état persistant. Les prérequis sont indicatifs et ne verrouillent pas artificiellement le contenu. Les étapes terminées alimentent aussi le moteur de gamification de manière idempotente.
+
+
+## Carte visuelle des compétences
+
+Une vue globale `#/competences` transforme la progression en carte de maîtrise. Elle couvre 42 compétences (6 par parcours) et réutilise les scores du parcours adaptatif plutôt que de créer une nouvelle progression. Chaque nœud peut être **Non vu**, **En cours**, **À renforcer** ou **Maîtrisé**, avec accès direct à une leçon ou un exercice ciblé. Les flèches représentent un ordre pédagogique recommandé et ne verrouillent jamais les contenus.
+
+## Mode « Prédire avant d’exécuter »
+
+Cahier Code propose désormais un mode optionnel de métacognition avant l’exécution du code. Il est disponible sur l’ensemble des environnements interactifs : Playground JavaScript, Labs HTML/CSS/JS, React Studio, TypeScript Studio, Node Lab (terminal et client HTTP) et SQL Studio.
+
+Lorsqu’il est actif, une exécution volontaire suit le flux : prédiction → exécution réelle/sandboxée → comparaison. L’utilisateur qualifie ensuite son raisonnement comme Exact, Presque ou Différent. Les exécutions automatiques et les validations internes ne déclenchent pas ce panneau afin de ne pas interrompre les live previews ou les tests pédagogiques.
+
+Le réglage est mémorisé dans l’état global (`predictionMode`) et les verdicts sont conservés dans `predictionStats`. Le raccourci `Alt + Shift + P` permet d’activer ou désactiver rapidement le mode. Cette fonctionnalité n’altère ni la validation des exercices ni la progression pédagogique.
+
+
+## Explication ligne par ligne
+
+Cahier Code propose désormais une aide **« Expliquer ligne par ligne »** sur les blocs de code et les éditeurs des parcours HTML, CSS, JavaScript, React, TypeScript, Node.js et SQL.
+
+Pour chaque ligne, l’outil détaille :
+
+- ce que fait la ligne ;
+- pourquoi elle est présente ;
+- ce qui peut changer si on la modifie ;
+- les notions techniques reconnues, à partir du même dictionnaire que les info-bulles et le glossaire.
+
+L’analyse s’adapte au langage (balises HTML, déclarations CSS, structures JS/React/TS/Node, clauses SQL) et utilise le code courant de l’éditeur lorsque l’apprenant a modifié l’exemple. Les panneaux sont repliables, responsive et respectent `prefers-reduced-motion`.
+
+## Playground libre global
+
+Route `#/playground`. Espace d'expérimentation indépendant de la progression, avec six environnements : Web (HTML/CSS/JS), JavaScript, React/Vite pédagogique, TypeScript 5.8.3, Node Lab pédagogique et SQLite réel. Les brouillons sont sauvegardés dans `state.playground` et ne donnent ni XP ni validation pédagogique.
+
+## Challenges chronométrés optionnels
+
+La route `#/challenges` ajoute des sessions de 3, 5 ou 10 minutes basées sur les QCM/Vrai-Faux existants des sept parcours. Ce mode possède son propre historique dans `state.timedChallenges` et ne modifie ni les résultats d'exercices, ni la maîtrise, ni les streaks, ni l'XP. Une expiration du chrono n'applique aucune pénalité. Les filtres permettent de choisir le parcours et la difficulté.
+
+## Mode entretien technique
+
+Nouvelle route `#/entretien`. Simulation indépendante de la progression : questions ouvertes de théorie, lecture de code, débogage et mise en situation sur les 7 parcours. L'utilisateur rédige d'abord sa réponse, découvre ensuite une grille de points attendus et s'auto-évalue (Solide / Partiel / À retravailler). Chrono optionnel (15 ou 25 minutes), historique local, score moyen, meilleur score et bilan par type de question. Aucune attribution d'XP, aucun échec pédagogique et aucune modification de l'indice de maîtrise.
+
+## Mode examen
+
+La route `#/examen` ajoute des examens blancs stricts et totalement séparés de la progression pédagogique.
+
+- Parcours : JavaScript, React, HTML, CSS, TypeScript, Node.js, SQL ou session mixte.
+- 10 ou 20 questions ; chrono facultatif de 10, 20 ou 30 minutes.
+- Banque issue des évaluations déjà présentes (et des exercices auto-corrigeables JavaScript), sans seconde vérité pédagogique.
+- Types utilisés : QCM, vrai/faux, prédiction et texte à compléter.
+- Pendant l'épreuve : aucune correction, aucun indice, aucun glossaire, aucune aide contextuelle ni explication ligne par ligne.
+- Navigation entre questions autorisée avant rendu ; expiration du chrono = rendu automatique.
+- Après rendu : note, résultat par parcours, notions faibles et correction complète question par question.
+- Historique local des 30 dernières copies, meilleure note et moyenne.
+- Aucun XP, streak, badge, erreur utile, maîtrise ou exercice de cours n'est modifié par un examen.
+
+## Portfolio automatique
+
+La route `#/portfolio` détecte uniquement les projets réellement validés dans les sept parcours et les projets fil rouge terminés. La progression pédagogique reste la source de vérité : le portfolio ne peut pas marquer un projet comme terminé.
+
+L'utilisateur peut masquer un projet, le mettre en avant, personnaliser sa description et renseigner un nom, un titre professionnel et une bio locale. `#/portfolio/apercu` fournit une vue propre du résultat. Deux exports locaux sont disponibles : une page HTML autonome et un fichier JSON des données publiées. Aucune publication réseau automatique n'est effectuée.
+
+## Journal d’apprentissage
+
+La route `#/journal` ajoute un journal personnel séparé de la progression. Chaque entrée peut conserver le parcours, le contexte, ce qui a été compris, ce qui reste flou, ce qui doit être revu, une note libre et un niveau de confiance. Les pages d’apprentissage proposent également un raccourci « Journal » qui préremplit le contexte courant. Le journal n’attribue pas d’XP et ne modifie ni la maîtrise ni les résultats des exercices.
+
+## Résumé automatique de session
+
+Le fichier `js/session-summary.js` ajoute une synthèse locale des sessions d’apprentissage. La synthèse réutilise les événements XP non historiques, les erreurs utiles, le journal d’apprentissage et les historiques des modes challenge/entretien/examen. Elle ne modifie aucune progression et n’attribue aucune récompense.
+
+- Route : `#/session`
+- Fin manuelle via « Terminer la session ».
+- Archivage silencieux après une pause de 45 minutes lorsqu’une nouvelle activité reprend.
+- Temps actif compté uniquement lorsque la page est visible et qu’une interaction récente a eu lieu.
+- Historique limité aux 40 dernières sessions.
+
+## Suggestions de prochaine étape
+
+La route `#/prochaine-etape` fournit une recommandation concrète distincte du parcours adaptatif. Elle combine les révisions espacées dues, les fragilités détectées par le moteur adaptatif, les parcours déjà commencés, les projets fil rouge actifs et les prérequis conseillés pour ouvrir un nouveau parcours. Une seule action principale est mise en avant, avec quelques alternatives et une justification visible. Les suggestions sont uniquement informatives : elles ne verrouillent aucun contenu et ne modifient ni XP, ni progression, ni maîtrise.

@@ -13,6 +13,8 @@ const GAMIFICATION_CONFIG = Object.freeze({
     evaluationCompleted: 100,
     projectCompleted: 200,
     finalProjectCompleted: 400,
+    threadStageCompleted: 75,
+    threadProjectCompleted: 500,
     dailyActivityBonus: 10
   }),
   dailyGoals: Object.freeze({ light: 20, normal: 40, intense: 80 }),
@@ -23,7 +25,7 @@ const GAMIFICATION_PATH_META = Object.freeze({
   javascript: { title:"JavaScript", mark:"JS" }, react:{ title:"React", mark:"⚛" },
   css:{ title:"CSS", mark:"CSS" }, html:{ title:"HTML", mark:"HTML" },
   typescript:{ title:"TypeScript", mark:"TS" }, node:{ title:"Node.js", mark:"N" },
-  sql:{ title:"SQL", mark:"SQL" }
+  sql:{ title:"SQL", mark:"SQL" }, git:{ title:"Git", mark:"Git" }
 });
 
 function emptyGamificationState() {
@@ -88,7 +90,7 @@ function gamificationAllExercises() {
     ...(typeof EXERCISES!=="undefined"?EXERCISES:[]), ...(typeof REACT_EXERCISES!=="undefined"?REACT_EXERCISES:[]),
     ...(typeof CSS_EXERCISES!=="undefined"?CSS_EXERCISES:[]), ...(typeof HTML_EXERCISES!=="undefined"?HTML_EXERCISES:[]),
     ...(typeof TYPESCRIPT_EXERCISES!=="undefined"?TYPESCRIPT_EXERCISES:[]), ...(typeof NODE_EXERCISES!=="undefined"?NODE_EXERCISES:[]),
-    ...(typeof SQL_EXERCISES!=="undefined"?SQL_EXERCISES:[])
+    ...(typeof SQL_EXERCISES!=="undefined"?SQL_EXERCISES:[]), ...(typeof GIT_COURSE_EXERCISES!=="undefined"?GIT_COURSE_EXERCISES:[])
   ];
 }
 function gamificationExercisePath(ex) { return ex.path || (typeof exercisePathFromId==="function"?exercisePathFromId(ex.id):"javascript"); }
@@ -97,12 +99,12 @@ function gamificationCatalog() {
   const rows=[];
   function addPath(pathId, lessons, exercises, levels, projects, evaluations) {
     const store=gamificationPathStore(pathId), lessonsDone=store.lessonsDone||{};
-    (lessons||[]).forEach(l=>{ if(lessonsDone[l.id]) rows.push({key:`lesson:${pathId}:${l.id}`,type:"lesson",resourceId:l.id,path:pathId,title:l.title||"Leçon terminée",xp:GAMIFICATION_CONFIG.xp.lessonCompleted}); });
+    (lessons||[]).forEach(l=>{ if(lessonsDone[l.id]) rows.push({key:`lesson:${pathId}:${l.id}`,type:"lesson",resourceId:l.id,path:pathId,title:l.title||"Leçon terminée",xp:pathId==="git"?8:GAMIFICATION_CONFIG.xp.lessonCompleted}); });
     (exercises||[]).forEach(ex=>{ const rec=typeof getRecord==="function"?getRecord(ex.id):null; if(rec&&rec.success){ const diff=Number(ex.difficulty)||2; rows.push({key:`exercise:${pathId}:${ex.id}`,type:"exercise",resourceId:ex.id,path:pathId,title:ex.notion||"Exercice réussi",xp:GAMIFICATION_CONFIG.xp.exerciseByDifficulty[diff]||GAMIFICATION_CONFIG.xp.exerciseCompleted,firstTry:rec.fails===0&&!rec.correctionSeen}); } });
     const evalStore=store.evaluations||{};
     Object.keys(evaluations||{}).forEach(level=>{ const rec=evalStore[level]||{}; const best=Number(rec.bestPercent!=null?rec.bestPercent:rec.best)||0; if(best>=80) rows.push({key:`evaluation:${pathId}:${level}`,type:"evaluation",resourceId:String(level),path:pathId,title:`Évaluation niveau ${level}`,xp:GAMIFICATION_CONFIG.xp.evaluationCompleted}); });
     const projectStore=store.projects||{}; const availableProjects=(projects||[]).filter(p=>p.available!==false); const maxProjectLevel=Math.max(0,...availableProjects.map(p=>Number(p.level||p.unlock?.module||0)));
-    availableProjects.forEach((p,index)=>{ let done=false; if(pathId==="javascript") done=Boolean((state.projects||{})[p.id]?.done); else done=Boolean(projectStore[p.id]?.done); if(done){ const isFinal=(Number(p.level||0)===maxProjectLevel&&maxProjectLevel>0)||index===availableProjects.length-1; rows.push({key:`project:${pathId}:${p.id}`,type:"project",resourceId:p.id,path:pathId,title:p.title||"Projet terminé",xp:isFinal?GAMIFICATION_CONFIG.xp.finalProjectCompleted:GAMIFICATION_CONFIG.xp.projectCompleted,final:isFinal}); } });
+    availableProjects.forEach((p,index)=>{ let done=false; if(pathId==="javascript") done=Boolean((state.projects||{})[p.id]?.done); else done=Boolean(projectStore[p.id]?.done); if(done){ const isFinal=(Number(p.level||0)===maxProjectLevel&&maxProjectLevel>0)||index===availableProjects.length-1; rows.push({key:`project:${pathId}:${p.id}`,type:"project",resourceId:p.id,path:pathId,title:p.title||"Projet terminé",xp:pathId==="git"?(isFinal?250:120):(isFinal?GAMIFICATION_CONFIG.xp.finalProjectCompleted:GAMIFICATION_CONFIG.xp.projectCompleted),final:isFinal}); } });
     (levels||[]).forEach(level=>{
       const num=Number(level.number||level); let levelLessons=[], levelExercises=[];
       if(pathId==="javascript") { const moduleId=level.id; levelLessons=(lessons||[]).filter(l=>l.module===moduleId); levelExercises=(exercises||[]).filter(ex=>levelLessons.some(l=>l.id===ex.lesson)); }
@@ -112,7 +114,7 @@ function gamificationCatalog() {
       const evalQuestions=evaluations&&evaluations[num]; const evalRequired=Array.isArray(evalQuestions)&&evalQuestions.length>0;
       const er=evalStore[num]||{}; const eb=Number(er.bestPercent!=null?er.bestPercent:er.best)||0; const evalOk=!evalRequired||eb>=80;
       const lp=(projects||[]).find(p=>Number(p.level||0)===num); const projectOk=!lp||(pathId==="javascript"?Boolean((state.projects||{})[lp.id]?.done):Boolean(projectStore[lp.id]?.done));
-      if(lOk&&eOk&&evalOk&&projectOk) rows.push({key:`learning-level:${pathId}:${num}`,type:"learningLevel",resourceId:String(num),path:pathId,title:`Niveau ${num} terminé`,xp:GAMIFICATION_CONFIG.xp.learningLevelCompleted});
+      if(lOk&&eOk&&evalOk&&projectOk) rows.push({key:`learning-level:${pathId}:${num}`,type:"learningLevel",resourceId:String(num),path:pathId,title:`Niveau ${num} terminé`,xp:pathId==="git"?75:GAMIFICATION_CONFIG.xp.learningLevelCompleted});
     });
   }
   addPath("javascript", typeof LESSONS!=="undefined"?LESSONS:[], typeof EXERCISES!=="undefined"?EXERCISES:[], typeof MODULES!=="undefined"?MODULES:[], typeof PROJECTS!=="undefined"?PROJECTS:[], {});
@@ -122,6 +124,14 @@ function gamificationCatalog() {
   addPath("typescript", typeof TYPESCRIPT_LESSONS!=="undefined"?TYPESCRIPT_LESSONS:[], typeof TYPESCRIPT_EXERCISES!=="undefined"?TYPESCRIPT_EXERCISES:[], typeof TYPESCRIPT_LEVELS!=="undefined"?TYPESCRIPT_LEVELS:[], typeof TYPESCRIPT_PROJECTS!=="undefined"?TYPESCRIPT_PROJECTS:[], typeof TYPESCRIPT_EVALUATIONS!=="undefined"?TYPESCRIPT_EVALUATIONS:{});
   addPath("node", typeof NODE_LESSONS!=="undefined"?NODE_LESSONS:[], typeof NODE_EXERCISES!=="undefined"?NODE_EXERCISES:[], typeof NODE_LEVELS!=="undefined"?NODE_LEVELS:[], typeof NODE_PROJECTS!=="undefined"?NODE_PROJECTS:[], typeof NODE_EVALUATIONS!=="undefined"?NODE_EVALUATIONS:{});
   addPath("sql", typeof SQL_LESSONS!=="undefined"?SQL_LESSONS:[], typeof SQL_EXERCISES!=="undefined"?SQL_EXERCISES:[], typeof SQL_LEVELS!=="undefined"?SQL_LEVELS:[], typeof SQL_PROJECTS!=="undefined"?SQL_PROJECTS:[], typeof SQL_EVALUATIONS!=="undefined"?SQL_EVALUATIONS:{});
+  addPath("git", typeof GIT_COURSE_LESSONS!=="undefined"?GIT_COURSE_LESSONS:[], typeof GIT_COURSE_EXERCISES!=="undefined"?GIT_COURSE_EXERCISES:[], typeof GIT_COURSE_LEVELS!=="undefined"?GIT_COURSE_LEVELS:[], typeof GIT_COURSE_PROJECTS!=="undefined"?GIT_COURSE_PROJECTS:[], {});
+  if(typeof THREAD_PROJECTS!=="undefined" && typeof threadProjectRecord==="function"){
+    THREAD_PROJECTS.forEach(project=>{
+      const pr=threadProjectRecord(project.id);
+      project.stages.forEach(stage=>{const sr=threadStageRecord(project.id,stage.id);if(sr.completedAt) rows.push({key:`thread-stage:${project.id}:${stage.id}`,type:"threadStage",resourceId:`${project.id}:${stage.id}`,path:stage.path||null,title:`${project.title} · ${stage.title}`,xp:GAMIFICATION_CONFIG.xp.threadStageCompleted});});
+      if(pr.completedAt) rows.push({key:`thread-project:${project.id}`,type:"threadProject",resourceId:project.id,path:null,title:`Fil rouge terminé · ${project.title}`,xp:GAMIFICATION_CONFIG.xp.threadProjectCompleted});
+    });
+  }
   return rows;
 }
 
@@ -173,22 +183,29 @@ const GAMIFICATION_BADGES = Object.freeze([
   {id:"css-50",icon:"CSS",title:"CSS Artist",description:"Réussis 50 exercices CSS.",category:"Langages",rarity:"Rare",metric:"pathExercises:css",target:50},
   {id:"polyglotte",icon:"∞",title:"Polyglotte",description:"Progresse dans 5 parcours différents.",category:"Exploration",rarity:"Épique",metric:"pathsStarted",target:5},
   {id:"fullstack",icon:"FS",title:"Full Stack Explorer",description:"Progresse en HTML, CSS, JavaScript, Node.js et SQL.",category:"Exploration",rarity:"Épique",metric:"fullstack",target:5},
+  {id:"git-first-commit",icon:"⑂",title:"First Commit",description:"Crée ton premier commit dans le parcours Git.",category:"Git",rarity:"Commun",metric:"gitFirstCommit",target:1},
+  {id:"git-branch-explorer",icon:"⑂",title:"Branch Explorer",description:"Crée et fusionne ta première branche.",category:"Git",rarity:"Commun",metric:"gitBranchExplorer",target:1},
+  {id:"git-conflict-resolver",icon:"!",title:"Conflict Resolver",description:"Résous ton premier conflit Git.",category:"Git",rarity:"Rare",metric:"gitConflictResolver",target:1},
+  {id:"git-ready",icon:"Git",title:"Git Ready",description:"Termine le parcours Git rapide.",category:"Git",rarity:"Rare",metric:"pathComplete:git",target:1},
   ...Object.keys(GAMIFICATION_PATH_META).map(id=>({id:`master-${id}`,icon:GAMIFICATION_PATH_META[id].mark,title:`${GAMIFICATION_PATH_META[id].title} Master`,description:`Termine tout le parcours ${GAMIFICATION_PATH_META[id].title}.`,category:"Maîtrise",rarity:"Légendaire",metric:`pathComplete:${id}`,target:1}))
 ]);
 
 function gamificationComputedStats() {
   const g=ensureGamificationState(), rewarded=Object.values(g.rewarded||{});
-  const lessons=rewarded.filter(x=>x.type==="lesson").length, exercises=rewarded.filter(x=>x.type==="exercise").length, projects=rewarded.filter(x=>x.type==="project").length, firstTry=rewarded.filter(x=>x.type==="firstTry").length;
+  const lessons=rewarded.filter(x=>x.type==="lesson").length, exercises=rewarded.filter(x=>x.type==="exercise").length, projects=rewarded.filter(x=>x.type==="project"||x.type==="threadProject").length, firstTry=rewarded.filter(x=>x.type==="firstTry").length;
   const pathExercise={}; rewarded.filter(x=>x.type==="exercise"&&x.path).forEach(x=>pathExercise[x.path]=(pathExercise[x.path]||0)+1);
-  const pathStarted={}; rewarded.filter(x=>x.path&&["lesson","exercise","project","evaluation","learningLevel"].includes(x.type)).forEach(x=>pathStarted[x.path]=true);
-  const perfectEvaluations=Object.entries({javascript:state,react:state.react||{},css:state.css||{},html:state.html||{},typescript:state.typescript||{},node:state.node||{},sql:state.sql||{}}).reduce((count,[id,store])=>count+Object.values(store.evaluations||{}).filter(r=>Number(r.bestPercent!=null?r.bestPercent:r.best)>=100).length,0);
+  const pathStarted={}; rewarded.filter(x=>x.path&&["lesson","exercise","project","evaluation","learningLevel","threadStage"].includes(x.type)).forEach(x=>pathStarted[x.path]=true);
+  const perfectEvaluations=Object.entries({javascript:state,react:state.react||{},css:state.css||{},html:state.html||{},typescript:state.typescript||{},node:state.node||{},sql:state.sql||{},git:state.git||{}}).reduce((count,[id,store])=>count+Object.values(store.evaluations||{}).filter(r=>Number(r.bestPercent!=null?r.bestPercent:r.best)>=100).length,0);
   const resolvedErrors=Array.isArray(state.errorHistory)?state.errorHistory.filter(e=>e&&e.resolvedAt).length:0;
   const challengeCount=gamificationAllExercises().filter(ex=>(Number(ex.difficulty)||0)>=4&&getRecord(ex.id).success).length;
   const completedLevels={}; rewarded.filter(x=>x.type==="learningLevel"&&x.path).forEach(x=>{if(!completedLevels[x.path])completedLevels[x.path]=0;completedLevels[x.path]++;});
-  const maxLevels={javascript:typeof MODULES!=="undefined"?MODULES.length:6,react:5,css:5,html:5,typescript:5,node:5,sql:5};
+  const maxLevels={javascript:typeof MODULES!=="undefined"?MODULES.length:6,react:5,css:5,html:5,typescript:5,node:5,sql:5,git:3};
   const pathComplete={}; Object.keys(maxLevels).forEach(id=>pathComplete[id]=(completedLevels[id]||0)>=maxLevels[id]?1:0);
   const fullstack=["html","css","javascript","node","sql"].filter(id=>pathStarted[id]).length;
-  return {lessons,exercises,projects,firstTry,perfectEvaluations,resolvedErrors,challengeCount,pathExercise,pathsStarted:Object.keys(pathStarted).length,pathStarted,level:userLevelForXp(g.totalXp),longestStreak:Number(g.streak.longest)||0,pathComplete,fullstack};
+  const gitFirstCommit=typeof getRecord==="function"&&getRecord("gx-commit").success?1:0;
+  const gitBranchExplorer=typeof getRecord==="function"&&getRecord("gx-merge").success?1:0;
+  const gitConflictResolver=typeof getRecord==="function"&&getRecord("gx-conflict").success?1:0;
+  return {lessons,exercises,projects,firstTry,perfectEvaluations,resolvedErrors,challengeCount,pathExercise,pathsStarted:Object.keys(pathStarted).length,pathStarted,level:userLevelForXp(g.totalXp),longestStreak:Number(g.streak.longest)||0,pathComplete,fullstack,gitFirstCommit,gitBranchExplorer,gitConflictResolver};
 }
 function badgeMetricValue(badge,stats) {
   if(badge.metric.startsWith("pathExercises:")) return stats.pathExercise[badge.metric.split(":")[1]]||0;

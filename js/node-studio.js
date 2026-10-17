@@ -224,7 +224,7 @@ function renderNodeWorkbench(options) {
   function readFile(name){ return vfs.files.get(nodeResolvePath(cwd,name)); }
   function fileExists(name){ return vfs.files.has(nodeResolvePath(cwd,name)); }
   function dirExists(name){ return vfs.dirs.has(nodeResolvePath(cwd,name)); }
-  function writeFile(name,code){ const path=nodeResolvePath(cwd,name); nodeEnsureDir(vfs,nodeDirname(path)); vfs.files.set(path,String(code)); renderExplorer(); if(path===activePath){editor.value=String(code);} }
+  function writeFile(name,code){ const path=nodeResolvePath(cwd,name); nodeEnsureDir(vfs,nodeDirname(path)); vfs.files.set(path,String(code)); renderExplorer(); if(path===activePath){editor.value=String(code);} if(typeof settings.onFsChange==="function") settings.onFsChange({type:"write",path,cwd,vfs}); }
 
   function renderExplorer(){
     explorer.replaceChildren(h("div",{class:"studio-tree-root"},"node-app/"));
@@ -243,7 +243,7 @@ function renderNodeWorkbench(options) {
     fileTitle.textContent = path.replace(/^\/project\/?/,"");
     renderExplorer();
   }
-  function onEdit(){ if(!locked && activePath) vfs.files.set(activePath,editor.value); }
+  function onEdit(){ if(!locked && activePath){ vfs.files.set(activePath,editor.value); if(typeof settings.onFsChange==="function") settings.onFsChange({type:"edit",path:activePath,cwd,vfs}); } }
   function addLine(text,cls){ terminalBody.append(h("div",{class:"studio-terminal-line "+(cls||"")},String(text))); terminalBody.scrollTop=terminalBody.scrollHeight; }
   function syncPrompt(){ prompt.textContent=(cwd==="/project"?"~/project":cwd.replace("/project","~"))+" $"; status.textContent="VFS · "+cwd; }
 
@@ -254,6 +254,10 @@ function renderNodeWorkbench(options) {
     if(!nested) addLine("$ "+raw,"command");
     history.push({command:raw,cwd});
     function out(text,cls){ output.push(String(text)); addLine(text,cls); }
+    if(typeof settings.commandHandler==="function") {
+      const handled=await settings.commandHandler({raw,cmd,args,cwd,vfs,out,renderExplorer,readFile,fileExists,dirExists,writeFile,snapshotFiles,setCwd:(next)=>{cwd=nodeNormalizePath(next);syncPrompt();},openFile,activePath});
+      if(handled&&handled.handled){ if(typeof settings.onCommandComplete==="function") settings.onCommandComplete({raw,cmd,args,cwd,vfs,result:handled}); return {ok:handled.ok!==false,output,error:handled.error||null}; }
+    }
     if(cmd==="clear"){terminalBody.replaceChildren();return{ok:true,output:[]};}
     if(cmd==="pwd"){out(cwd);return{ok:true,output};}
     if(cmd==="ls"){
@@ -267,11 +271,11 @@ function renderNodeWorkbench(options) {
     }
     if(cmd==="mkdir"){
       const names=args.filter(x=>x!=="-p"); if(!names.length){out("mkdir: missing operand","error");return{ok:false,output};}
-      names.forEach(name=>nodeEnsureDir(vfs,nodeResolvePath(cwd,name))); renderExplorer(); return{ok:true,output};
+      names.forEach(name=>nodeEnsureDir(vfs,nodeResolvePath(cwd,name))); renderExplorer(); if(typeof settings.onFsChange==="function") settings.onFsChange({type:"mkdir",cwd,vfs}); return{ok:true,output};
     }
     if(cmd==="touch"){
       if(!args.length){out("touch: missing file operand","error");return{ok:false,output};}
-      args.forEach(name=>{const path=nodeResolvePath(cwd,name);nodeEnsureDir(vfs,nodeDirname(path));if(!vfs.files.has(path))vfs.files.set(path,"");});renderExplorer();return{ok:true,output};
+      args.forEach(name=>{const path=nodeResolvePath(cwd,name);nodeEnsureDir(vfs,nodeDirname(path));if(!vfs.files.has(path))vfs.files.set(path,"");});renderExplorer();if(typeof settings.onFsChange==="function") settings.onFsChange({type:"touch",cwd,vfs});return{ok:true,output};
     }
     if(cmd==="cat"){
       const path=nodeResolvePath(cwd,args[0]||""); if(!vfs.files.has(path)){out("cat: "+(args[0]||"")+": No such file","error");return{ok:false,output};}
@@ -326,22 +330,38 @@ function renderNodeWorkbench(options) {
     return result;
   }
 
-  terminalInput.addEventListener("keydown",async e=>{if(e.key==="Enter"){const value=terminalInput.value;terminalInput.value="";await executeCommand(value);}});
+  async function manualCommand(value){
+    const command=String(value||"").trim(); if(!command)return;
+    if(window.PredictionMode?.enabled()) return PredictionMode.run({kind:"node",context:"Terminal Node.js",prompt:"Que penses-tu que cette commande va afficher ou modifier ?"},()=>executeCommand(command),()=>{
+      const recent=history.slice(-1)[0];
+      const logs=lastRun?.logs||[];
+      return logs.length?logs.join("\n"):(lastRun?.error||recent||"Commande terminée. Observe le terminal et le système de fichiers virtuel.");
+    });
+    return executeCommand(command);
+  }
+  async function manualHttp(){
+    if(window.PredictionMode?.enabled()) return PredictionMode.run({kind:"node",context:"Client HTTP Node.js",prompt:"Quel statut HTTP et quel corps de réponse attends-tu ?"},()=>sendHttpRequest(httpMethod.value,httpUrl.value,httpBody.value),r=>{
+      const x=r?.httpResponse; return x?("Status: "+x.status+"\n"+(x.body||"")):(r?.error||"Aucune réponse.");
+    });
+    return sendHttpRequest(httpMethod.value,httpUrl.value,httpBody.value);
+  }
+
+  terminalInput.addEventListener("keydown",async e=>{if(e.key==="Enter"){const value=terminalInput.value;terminalInput.value="";await manualCommand(value);}});
 
   function reset(){
-    vfs=nodeBuildVirtualFs(JSON.parse(initialSnapshot));cwd="/project";activePath=[...vfs.files.keys()][0];lastRun=null;history.length=0;terminalBody.replaceChildren();httpResponse.textContent="Aucune requête envoyée.";editor.value=vfs.files.get(activePath)||"";fileTitle.textContent=activePath.replace(/^\/project\/?/,"");renderExplorer();syncPrompt();
+    vfs=nodeBuildVirtualFs(JSON.parse(initialSnapshot));cwd="/project";activePath=[...vfs.files.keys()][0];lastRun=null;history.length=0;terminalBody.replaceChildren();httpResponse.textContent="Aucune requête envoyée.";editor.value=vfs.files.get(activePath)||"";fileTitle.textContent=activePath.replace(/^\/project\/?/,"");renderExplorer();syncPrompt(); if(typeof settings.onReset==="function") settings.onReset({cwd,vfs});
   }
   function lock(){locked=true;editor.readOnly=true;terminalInput.disabled=true;}
   function changed(){return JSON.stringify(snapshotFiles())!==JSON.stringify(JSON.parse(initialSnapshot).map(f=>({name:f.name,code:f.code})).sort((a,b)=>a.name.localeCompare(b.name)))||history.length>0;}
 
   const node=h("div",{class:"node-workbench"},
-    h("div",{class:"studio-guide"},h("strong",{},"NODE LAB"),h("span",{},settings.guide||"Modifie les fichiers puis utilise le terminal. Le système de fichiers reste cohérent entre les deux."),status),
+    h("div",{class:"studio-guide"},h("strong",{},settings.labLabel||"NODE LAB"),h("span",{},settings.guide||"Modifie les fichiers puis utilise le terminal. Le système de fichiers reste cohérent entre les deux."),status),
     h("div",{class:"studio-workspace node-workspace"},
       h("aside",{class:"studio-explorer"},h("div",{class:"studio-panel-title"},h("span",{},"EXPLORATEUR"),h("small",{},"virtuel")),explorer),
       h("section",{class:"studio-code"},h("div",{class:"studio-panel-title"},fileTitle,h("small",{},"éditeur partagé")),h("div",{class:"studio-editor-area"},editor))),
     h("section",{class:"studio-terminal node-terminal"},h("div",{class:"studio-panel-title"},h("span",{},"TERMINAL"),h("small",{},"sandbox pédagogique")),terminalBody,h("label",{class:"studio-terminal-row"},prompt,terminalInput)),
-    settings.httpClient?h("section",{class:"node-http-client"},h("div",{class:"studio-panel-title"},h("span",{},"CLIENT HTTP"),h("small",{},"requête simulée vers localhost")),h("div",{class:"node-http-request-row"},httpMethod,httpUrl,h("button",{class:"btn primary",type:"button",onclick:()=>sendHttpRequest(httpMethod.value,httpUrl.value,httpBody.value)},"Envoyer")),httpBody,httpResponse):null,
-    h("div",{class:"toolbar studio-toolbar"},h("button",{class:"btn",type:"button",onclick:()=>executeCommand("ls")},"ls"),h("button",{class:"btn",type:"button",onclick:()=>executeCommand("node app.js")},"node app.js"),h("button",{class:"btn ghost",type:"button",onclick:reset},"Réinitialiser")),
+    settings.httpClient?h("section",{class:"node-http-client"},h("div",{class:"studio-panel-title"},h("span",{},"CLIENT HTTP"),h("small",{},"requête simulée vers localhost")),h("div",{class:"node-http-request-row"},httpMethod,httpUrl,h("button",{class:"btn primary",type:"button",onclick:manualHttp},"Envoyer")),httpBody,httpResponse):null,
+    h("div",{class:"toolbar studio-toolbar"},...(settings.toolbarCommands||[{command:"ls",label:"ls"},{command:"node app.js",label:"node app.js"}]).map(item=>h("button",{class:"btn",type:"button",onclick:()=>manualCommand(item.command)},item.label||item.command)),h("button",{class:"btn ghost",type:"button",onclick:reset},"Réinitialiser")),
     h("div",{class:"studio-note"},h("strong",{},"Environnement sécurisé"),para("Le terminal manipule uniquement un système de fichiers virtuel. Les scripts sont exécutés dans un Worker sandboxé ; aucune commande système réelle ni aucun fichier de ta machine n'est accessible.","muted small")));
   renderExplorer();syncPrompt();
 

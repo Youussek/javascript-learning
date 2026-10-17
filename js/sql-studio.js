@@ -30,7 +30,7 @@ function renderSqlWorkbench(options={}){
   const paramsStarter=options.params===undefined||options.params===null?null:JSON.stringify(options.params,null,2);
   const editor=h("textarea",{class:"answer sql-editor",rows:8,spellcheck:"false","aria-label":"Éditeur SQL"},starter);
   const paramsEditor=paramsStarter===null?null:h("textarea",{class:"answer sql-params",rows:3,spellcheck:"false","aria-label":"Paramètres SQL JSON"},paramsStarter);
-  enhanceEditor(editor,()=>run(),"sql");
+  enhanceEditor(editor,()=>manualRun(),"sql");
   const status=h("div",{class:"sql-status muted small","aria-live":"polite"},"Initialisation de SQLite…");
   const tablesBox=h("div",{class:"sql-tables"});
   const relationsBox=h("div",{class:"sql-relations"});
@@ -132,11 +132,20 @@ function renderSqlWorkbench(options={}){
       return {ok:false,result:null,error:lastError,query:sql,params:boundParams};
     }
   }
-  const execute=h("button",{class:"btn primary",type:"button",onclick:()=>run()},"Exécuter");
+  async function manualRun(){
+    if(window.PredictionMode?.enabled()) return PredictionMode.run({kind:"sql",context:"SQL Studio",prompt:"Quelles colonnes, lignes ou erreur penses-tu obtenir ?"},()=>run(),r=>{
+      if(!r?.ok)return "Erreur SQL : "+(r?.error||"inconnue");
+      const out=r.result||{};
+      if(!out.columns?.length)return "Requête exécutée sans tableau de résultat.";
+      return out.columns.join(" | ")+"\n"+(out.values||[]).map(row=>row.map(v=>v===null?"NULL":String(v)).join(" | ")).join("\n");
+    });
+    return run();
+  }
+  const execute=h("button",{class:"btn primary",type:"button",onclick:manualRun},"Exécuter");
   const reset=h("button",{class:"btn",type:"button",onclick:async()=>{editor.value=starter;if(paramsEditor)paramsEditor.value=paramsStarter;changed=false;await createDb();}},"Réinitialiser la base");
   editor.addEventListener("input",()=>{changed=true;});
   if(paramsEditor)paramsEditor.addEventListener("input",()=>{changed=true;});
-  editor.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){e.preventDefault();run();}});
+  editor.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){e.preventDefault();manualRun();}});
   const ready=createDb().catch(error=>{status.textContent="Moteur SQL indisponible";errorBox.hidden=false;errorBox.textContent=String(error.message||error);});
   const node=h("section",{class:"sql-studio"},
     h("div",{class:"studio-guide"},h("strong",{},"SQL STUDIO · SQLite"),h("span",{},options.guide||"Observe les tables, écris une requête puis exécute-la.")),

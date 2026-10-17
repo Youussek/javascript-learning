@@ -119,9 +119,15 @@ function renderPlayground(code, options) {
     h("p", { class: "muted small" }, "Clique sur Exécuter pour voir le résultat."));
   const rows = settings.rows || Math.min(14, code.split("\n").length + 1);
 
-  async function run() {
+  async function executeRaw() {
     output.replaceChildren(h("p", { class: "muted small" }, "Exécution…"));
-    renderOutput(output, await runCode(editor.value, []));
+    const result=await runCode(editor.value, []);
+    renderOutput(output, result);
+    return result;
+  }
+  async function run() {
+    if(window.PredictionMode?.enabled()) return PredictionMode.run({kind:"javascript",context:"Playground JavaScript",prompt:"Qu’est-ce que ce code va afficher dans la console ?"},executeRaw,r=>r?.error?("Erreur : "+r.error):((r?.logs||[]).join("\n")||"Aucune sortie console."));
+    return executeRaw();
   }
 
   const editor = makeEditor(code, rows, run);

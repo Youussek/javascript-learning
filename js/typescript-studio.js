@@ -133,9 +133,16 @@ function renderTypeScriptWorkbench(options) {
     addTerm("Commande contrôlée non reconnue. Essaie : npx tsc, npx tsc --noEmit, npx tsc --init, npx tsc -v.","hint"); }
   terminalInput.addEventListener("keydown",e=>{if(e.key==="Enter"){const v=terminalInput.value;terminalInput.value="";terminal(v);}});
   const terminalPanel=settings.terminal===false?null:h("section",{class:"studio-terminal ts-terminal"},h("div",{class:"studio-panel-title"},h("span",{},"TERMINAL TYPESCRIPT"),h("small",{},"commandes simulées · sûres")),terminalBody,h("label",{class:"studio-terminal-row"},h("span",{class:"studio-terminal-prompt"},"$"),terminalInput));
+  async function manualRunCompiled(){
+    if(window.PredictionMode?.enabled()) return PredictionMode.run({kind:"typescript",context:"TypeScript Studio",prompt:"Après compilation, qu’est-ce que le JavaScript va afficher ou produire ?"},runCompiled,r=>{
+      if(r?.error)return "Erreur : "+r.error;
+      return (r?.logs||[]).map(x=>x.text||String(x)).join("\n")||"Exécution terminée sans sortie console.";
+    });
+    return runCompiled();
+  }
   const node=h("div",{class:"typescript-workbench"},
     h("div",{class:"ts-workspace"},h("section",{class:"ts-editor-panel"},h("div",{class:"studio-panel-title"},h("span",{},settings.filename||"main.ts"),h("small",{},"TypeScript")),editor),h("section",{class:"ts-compiled-panel"},h("div",{class:"studio-panel-title"},h("span",{},"JAVASCRIPT COMPILÉ"),h("small",{},"types supprimés")),jsBox)),
-    h("div",{class:"toolbar"},h("button",{class:"btn primary",type:"button",onclick:analyze},"Analyser"),h("button",{class:"btn",type:"button",onclick:runCompiled},"Exécuter le JS"),h("button",{class:"btn ghost",type:"button",onclick:reset},"Réinitialiser")),
+    h("div",{class:"toolbar"},h("button",{class:"btn primary",type:"button",onclick:analyze},"Analyser"),h("button",{class:"btn",type:"button",onclick:manualRunCompiled},"Exécuter le JS"),h("button",{class:"btn ghost",type:"button",onclick:reset},"Réinitialiser")),
     h("div",{class:"ts-output-grid"},diagnosticBox,runtimeBox),terminalPanel,
     h("div",{class:"studio-note"},h("strong",{},"Compilateur réel"),para("Les diagnostics sont produits localement par TypeScript 5.8.3 embarqué. Le terminal reste une simulation pédagogique contrôlée : aucune commande système n'est exécutée.","muted small")));
   function reset(){editor.value=starter;runtimeBox.replaceChildren(h("p",{class:"console-title"},"Exécution JavaScript"),para("Code remis à zéro.","muted small"));analyze();}

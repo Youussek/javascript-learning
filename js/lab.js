@@ -462,6 +462,17 @@ function renderLab(options) {
     return result;
   }
 
+  async function manualRun(){
+    const kind=(settings.language||document.body.dataset.path||"javascript");
+    if(window.PredictionMode?.enabled()){
+      return PredictionMode.run({kind,context:"Lab web",prompt:kind==="html"||kind==="css"?"Que penses-tu voir dans l’aperçu après exécution ?":"Qu’est-ce que le code va afficher ou modifier ?"},()=>run([]),result=>{
+        const logs=(result?.logs||[]).map(x=>x.text||String(x)).join("\n");
+        return logs||"Observe l’aperçu : la page a été rendue sans sortie console.";
+      });
+    }
+    return run([]);
+  }
+
   function select(name) {
     starter.forEach((f) => {
       const active = f.name === name;
@@ -474,7 +485,7 @@ function renderLab(options) {
   starter.forEach((file) => {
     const language = file.name.endsWith(".html") ? "html" : file.name.endsWith(".css") ? "css" : "js-browser";
     const rows = Math.max(5, Math.min(14, file.code.split("\n").length + 1));
-    const editor = makeEditor(file.code, rows, () => run([]), language);
+    const editor = makeEditor(file.code, rows, manualRun, language);
     editor.readOnly = file.readOnly;
     editor.tab = h("button", { class: "lab-tab", type: "button", role: "tab", onclick: () => select(file.name) },
       file.name + (file.readOnly ? " (lecture seule)" : ""));
@@ -492,7 +503,7 @@ function renderLab(options) {
   select((starter.find((f) => !f.readOnly) || starter[0]).name);
 
   const toolbar = h("div", { class: "toolbar" },
-    h("button", { class: "btn primary", type: "button", onclick: () => run([]) }, settings.live ? "Actualiser" : "Exécuter"));
+    h("button", { class: "btn primary", type: "button", onclick: manualRun }, settings.live ? "Actualiser" : "Exécuter"));
   if (settings.previewModes) {
     [{label:"📱 Mobile",w:"360px"},{label:"▣ Tablette",w:"700px"},{label:"🖥 Desktop",w:"100%"}].forEach(mode => {
       toolbar.append(h("button", { class:"btn small", type:"button", onclick:()=>{ preview.style.width=mode.w; preview.style.maxWidth="100%"; } }, mode.label));

@@ -23,12 +23,9 @@
       </a>
       <div id="path-switcher" class="sidebar-path-switcher"></div>
       <nav id="nav" aria-label="Pages et cours"></nav>
-      <div class="gamification-sidebar-links">
-        <a href="#/profil" class="btn ghost">★ <span>Profil & XP</span></a>
-        <a href="#/badges" class="btn ghost">🏆 <span>Badges</span></a>
-      </div>
       <div class="sidebar-foot">
         <button id="sidebar-collapse" class="btn ghost sidebar-collapse" type="button" aria-label="Réduire la barre latérale">⇤ <span>Réduire</span></button>
+        <button id="prediction-mode-toggle" class="btn ghost prediction-mode-toggle" type="button" aria-pressed="false"><span aria-hidden="true">◉</span> <span class="prediction-mode-label">Mode prédiction</span></button>
         <button id="focus-mode-toggle" class="btn ghost focus-mode-toggle" type="button" aria-pressed="false"><span aria-hidden="true">◎</span> <span class="focus-mode-label">Mode focus</span></button>
         <button id="beginner-mode-toggle" class="btn ghost learning-mode-toggle" type="button" aria-pressed="false"><span aria-hidden="true">◌</span> <span class="learning-mode-label">Mode débutant</span></button>
         <button id="theme-toggle" class="btn ghost" type="button">Thème clair</button>
@@ -41,6 +38,7 @@
         <span class="topbar-title" id="topbar-title">Cahier Code</span>
         <div class="topbar-actions">
           <div id="gamification-mini" class="gamification-mini"></div>
+          <button id="prediction-mode-toggle-mobile" class="topbar-learning-mode topbar-prediction-mode" type="button" aria-pressed="false"><span class="prediction-mode-label">Prédire</span></button>
           <button id="focus-mode-toggle-mobile" class="topbar-learning-mode topbar-focus-mode" type="button" aria-pressed="false"><span class="focus-mode-label">Focus</span></button>
           <button id="beginner-mode-toggle-mobile" class="topbar-learning-mode" type="button" aria-pressed="false"><span class="learning-mode-label">Mode débutant</span></button>
           <a id="topbar-paths" class="topbar-paths" href="#/">Choisir un parcours</a>
@@ -75,11 +73,13 @@
   <script src="js/html-level4.js"></script>
   <script src="js/html-level5.js"></script>
   <script src="js/code-help.js"></script>
+  <script src="js/line-explainer.js"></script>
   <script src="js/beginner-mode.js"></script>
   <script src="js/focus-mode.js"></script>
   <script src="js/editor.js"></script>
   <script src="js/lab.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/prediction-mode.js"></script>
   <script src="js/react-studio.js"></script>
   <script src="js/css-studio.js"></script>
   <script src="js/html-studio.js"></script>
@@ -90,6 +90,7 @@
   <script src="js/node-level4.js"></script>
   <script src="js/node-level5.js"></script>
   <script src="js/node-studio.js"></script>
+  <script src="js/git-course.js"></script>
   <script src="js/sql-course.js"></script>
   <script src="js/sql-level2.js"></script>
   <script src="js/sql-level3.js"></script>
@@ -102,7 +103,26 @@
   <script src="js/frequent-errors.js"></script>
   <script src="js/explain-alt.js"></script>
   <script src="js/glossary.js"></script>
+  <script src="js/thread-projects.js"></script>
   <script src="js/gamification.js"></script>
+  <script src="js/adaptive-path.js"></script>
+  <script src="js/skills-map.js"></script>
+  <script src="js/mastery-index.js"></script>
+  <script src="js/cross-language-review.js"></script>
+  <script src="js/why-learn.js"></script>
+  <script src="js/ticket-simulator.js"></script>
+  <script src="js/git-pedagogical.js"></script>
+  <script src="js/global-playground.js"></script>
+  <script src="js/timed-challenges.js"></script>
+  <script src="js/technical-interview.js"></script>
+  <script src="js/exam-mode.js"></script>
+  <script src="js/portfolio.js"></script>
+  <script src="js/learning-journal.js"></script>
+  <script src="js/session-summary.js"></script>
+  <script src="js/next-step.js"></script>
+  <script src="js/progression-history.js"></script>
+  <script src="js/backup-export.js"></script>
+  <script src="js/local-profiles.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
